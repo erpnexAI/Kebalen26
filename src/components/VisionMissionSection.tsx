@@ -210,7 +210,7 @@ export function VisionMissionSection({ isDayMode }: VisionMissionSectionProps) {
               </div>
               
               <h2 className={`font-serif italic text-4xl sm:text-5xl lg:text-6xl leading-[1.15] tracking-tight transition-colors duration-500 ${
-                isDayMode ? "text-stone-900" : "text-white"
+                isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
               }`}>
                 Sinergi Tradisi, <br />
                 <span className="text-emerald-400 not-italic font-sans font-bold tracking-tight">BE.R.JU.AN.G</span>

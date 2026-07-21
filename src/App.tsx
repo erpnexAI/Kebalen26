@@ -4,18 +4,36 @@
  */
 
 import { ArrowRight, Menu, X, Sun, Moon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassToggle } from "./components/GlassToggle";
 import { LabSection } from "./components/LabSection";
 import { VisionMissionSection } from "./components/VisionMissionSection";
+import { ProgramKegiatanSection } from "./components/ProgramKegiatanSection";
+import { OurTeamSection } from "./components/OurTeamSection";
+import { NewsSection } from "./components/NewsSection";
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDayMode, setIsDayMode] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
-  const navItems = ["Lab", "About", "Works", "News", "Contact"];
+  const [isNavHidden, setIsNavHidden] = useState(false);
+  const navItems = ["About", "Programs", "Our Team", "News"];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hide nav when scrolling past page 1 (hero section) into page 2 and beyond
+      if (window.scrollY > window.innerHeight * 0.5) {
+        setIsNavHidden(true);
+      } else {
+        setIsNavHidden(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const triggerNotification = (item: string) => {
     setActiveNotification(item);
@@ -96,72 +114,52 @@ export default function App() {
           )}
         </div>
 
-        {/* Navbar */}
-        <nav className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 hidden md:flex items-center gap-12 px-8 h-[80px] mt-[9px] rounded-full backdrop-blur-xl border transition-all duration-300 ${isDayMode ? "bg-white/10 border-black/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)] text-black" : "bg-black/10 border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] text-[#E1E0CC]"}`}>
-          {navItems.map((item) => (
-            <button
-              key={item}
-              onClick={(e) => {
-                e.preventDefault();
-                if (item === "Lab") {
-                  setIsLabOpen(true);
-                } else if (item === "About") {
-                  document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
-                } else {
-                  triggerNotification(item);
-                }
-              }}
-              className="text-sm font-medium transition-all hover:text-emerald-400 hover:scale-105 cursor-pointer bg-transparent border-none outline-none"
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
+        {/* Navbar Wrapper with Rotating Light Frame & Authentic Glassmorphism (70% Scale with Smooth Fade Out on Scroll) */}
+        <div className={`fixed top-3 left-1/2 -translate-x-1/2 scale-[0.7] origin-top z-50 p-[1.5px] rounded-[40px] overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-all duration-700 ease-in-out ${
+          isNavHidden 
+            ? "opacity-0 pointer-events-none -translate-y-6" 
+            : "opacity-100 pointer-events-auto translate-y-0"
+        }`}>
+          {/* Rotating Soft White Light Beam */}
+          <div className="absolute top-1/2 left-1/2 w-[350%] h-[600%] -translate-x-1/2 -translate-y-1/2 animate-silver-spin bg-[conic-gradient(from_0deg,transparent_0deg_200deg,rgba(255,255,255,0.05)_230deg,rgba(255,255,255,0.95)_290deg,rgba(255,255,255,0.3)_330deg,transparent_360deg)] pointer-events-none opacity-100" />
+          
+          {/* Glass Edge Specular Reflection Border */}
+          <div className="absolute inset-0 rounded-[40px] border border-white/40 pointer-events-none z-20" />
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className={`md:hidden fixed top-6 right-6 z-50 p-2 transition-colors ${isDayMode ? "text-black" : "text-primary"}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X /> : <Menu />}
-        </button>
+          {/* Inner Nav Container - Pure Glassmorphism Effect */}
+          <nav className={`relative z-10 flex items-center gap-4 sm:gap-8 md:gap-12 px-6 sm:px-9 h-12 sm:h-16 rounded-[40px] backdrop-blur-xl transition-all duration-300 ${
+            isDayMode 
+              ? "bg-white/30 border border-white/50 text-stone-900 shadow-[0_8px_32px_0_rgba(31,38,135,0.12),inset_0_1px_1px_0_rgba(255,255,255,0.9)]" 
+              : "bg-black/35 border border-white/20 text-[#E1E0CC] shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.35)]"
+          }`}>
+            {navItems.map((item) => (
+              <button
+                key={item}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (item === "Lab") {
+                    setIsLabOpen(true);
+                  } else if (item === "About") {
+                    document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
+                  } else if (item === "Programs") {
+                    document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" });
+                  } else if (item === "Our Team") {
+                    document.getElementById("team")?.scrollIntoView({ behavior: "smooth" });
+                  } else if (item === "News") {
+                    document.getElementById("news")?.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    triggerNotification(item);
+                  }
+                }}
+                className="text-xs sm:text-sm font-semibold tracking-wider uppercase transition-all hover:text-emerald-400 hover:scale-105 cursor-pointer bg-transparent border-none outline-none whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        {/* Mobile Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30, cubicBezier: [0.4, 0, 0.2, 1] }}
-              className={`fixed inset-0 z-40 flex flex-col justify-center items-center gap-8 ${isDayMode ? "bg-white text-black" : "bg-black text-primary"}`}
-            >
-              {navItems.map((item, i) => (
-                <motion.button
-                  key={item}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    if (item === "Lab") {
-                      setIsLabOpen(true);
-                    } else if (item === "About") {
-                      setTimeout(() => {
-                        document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
-                      }, 100);
-                    } else {
-                      triggerNotification(item);
-                    }
-                  }}
-                  className="text-2xl font-medium cursor-pointer bg-transparent border-none outline-none"
-                >
-                  {item}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+
 
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16 grid grid-cols-12 gap-4 sm:gap-8 opacity-55">
@@ -196,8 +194,8 @@ export default function App() {
                 ? "bg-white/30 border-white/50 shadow-[0_8px_32px_rgba(255,255,255,0.2)]" 
                 : "bg-black/40 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
             }`}>
-              <p className={`text-[11px] sm:text-sm md:text-base leading-[1.4] font-serif italic transition-colors duration-500 ${isDayMode ? "text-black" : "text-primary"}`}>
-                Exploring the intersection of technology, art, and human experience through iterative design and experimental prototyping.
+              <p className={`text-[11px] sm:text-xs md:text-sm leading-[1.4] font-serif italic text-center transition-colors duration-500 ${isDayMode ? "text-black" : "text-primary"}`}>
+                "Bekerjalah kamu, maka Allah dan Rasul-Nya serta orang-orang mukmin akan melihat pekerjaanmu itu & kamu akan dikembalikan kepada (Allah) Yang Mengetahui akan yang ghaib & yang nyata, lalu Diberitakan-Nya kepada kamu apa yang telah kamu kerjakan."
               </p>
             </div>
             <GlassToggle isDayMode={isDayMode} onToggle={() => setIsDayMode(!isDayMode)} />
@@ -209,9 +207,6 @@ export default function App() {
           onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
           className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer"
         >
-          <span className={`text-[10px] font-mono tracking-widest uppercase opacity-80 ${isDayMode ? "text-stone-700" : "text-stone-300"}`}>
-            SCROLL DOWN
-          </span>
           <motion.div
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -226,6 +221,15 @@ export default function App() {
 
         {/* Vision Mission & Tagline Section */}
         <VisionMissionSection isDayMode={isDayMode} />
+
+        {/* Program Kegiatan (Expanding Accordion Cards) */}
+        <ProgramKegiatanSection isDayMode={isDayMode} />
+
+        {/* Our Team Section */}
+        <OurTeamSection isDayMode={isDayMode} />
+
+        {/* News & Blog Section */}
+        <NewsSection isDayMode={isDayMode} />
 
         {/* Custom Premium Toast/Notification */}
         <AnimatePresence>
