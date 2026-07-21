@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #DEDBC8;
+  --color-muted-green: #2d3a2a;
+  --color-emerald-accent: #34d399; /* text-emerald-400 */
+  --font-sans: "Manrope", sans-serif;
+  --font-serif: "Instrument Serif", serif;
+}
+
+* { font-family: 'Manrope', sans-serif; }
+body { background-color: #000000; }
+
+.hero {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: 45% center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.blur-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200px;
+  backdrop-filter: blur(20px);
+  z-index: 1;
+}
+
+.blur-overlay-top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+}
+
+.blur-overlay-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
