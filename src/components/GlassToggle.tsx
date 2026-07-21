@@ -10,7 +10,7 @@ export function GlassToggle({ isDayMode, onToggle }: GlassToggleProps) {
   return (
     <motion.button
       onClick={onToggle}
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 opacity-[0.55] flex items-center p-1 rounded-full backdrop-blur-md border shadow-lg ${isDayMode ? "bg-white/40 border-black/10" : "bg-black/40 border-white/10"}`}
+      className={`fixed top-6 left-6 md:top-auto md:bottom-8 md:right-8 md:left-auto md:translate-x-0 z-50 opacity-[0.75] hover:opacity-100 transition-opacity duration-300 flex items-center p-1 rounded-full backdrop-blur-md border shadow-lg ${isDayMode ? "bg-white/40 border-black/10" : "bg-black/40 border-white/10"}`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
