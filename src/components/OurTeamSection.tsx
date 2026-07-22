@@ -327,7 +327,7 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
             
-            <h2 className={`text-4xl sm:text-5xl lg:text-6xl font-serif italic leading-[1.1] tracking-tight ${
+            <h2 className={`text-4xl sm:text-5xl lg:text-6xl font-flared font-bold italic leading-[1.1] tracking-tight ${
               isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
             }`}>
               Our Team<span className="text-emerald-400 font-sans not-italic">.</span>

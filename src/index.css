@@ -9,6 +9,11 @@
   --font-bodoni: "Bodoni Moda", serif;
   --font-syne: "Syne", sans-serif;
   --font-cinzel: "Cinzel", serif;
+  --font-flared: "Cinzel", "Marcellus", "Cinzel Decorative", serif;
+}
+
+.font-flared {
+  font-family: "Cinzel", "Marcellus", "Cinzel Decorative", serif;
 }
 
 * { font-family: 'Manrope', sans-serif; }

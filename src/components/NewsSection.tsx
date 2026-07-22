@@ -163,7 +163,7 @@ export function NewsSection({ isDayMode }: NewsSectionProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
             <div className="lg:col-span-8 space-y-4">
-              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-serif italic leading-none tracking-tight ${
+              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-flared font-bold italic leading-none tracking-tight ${
                 isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
               }`}>
                 Kabar Kebalen<span className="text-emerald-400 font-sans not-italic">.</span> <br />

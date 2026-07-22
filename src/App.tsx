@@ -52,6 +52,29 @@ export default function App() {
     ? "bg-white/60 text-black border-black/10"
     : "bg-[#121212]/60 text-[#E1E0CC] border-white/10";
 
+  const handleIframeMute = (iframe: HTMLIFrameElement | null) => {
+    if (!iframe) return;
+    const sendMuteCommand = () => {
+      try {
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "mute", args: [] }),
+          "*"
+        );
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "setVolume", args: [0] }),
+          "*"
+        );
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    sendMuteCommand();
+    setTimeout(sendMuteCommand, 300);
+    setTimeout(sendMuteCommand, 1000);
+    setTimeout(sendMuteCommand, 2500);
+  };
+
   return (
     <div className={`relative w-full min-h-screen transition-colors duration-500 ${isDayMode ? "bg-[#faf9f6]" : "bg-black"}`}>
       <div className="relative w-full">
@@ -65,57 +88,25 @@ export default function App() {
           {isDayMode ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
-                src="https://www.youtube.com/embed/KCIFLPstg_4?autoplay=1&mute=1&loop=1&playlist=KCIFLPstg_4&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
+                src="https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
                 className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
                 loading="lazy"
                 title="Day Mode Background Video"
-                onLoad={(e) => {
-                  try {
-                    const iframe = e.target as HTMLIFrameElement;
-                    iframe.contentWindow?.postMessage(JSON.stringify({
-                      event: "command",
-                      func: "mute",
-                      args: []
-                    }), "*");
-                    iframe.contentWindow?.postMessage(JSON.stringify({
-                      event: "command",
-                      func: "setVolume",
-                      args: [0]
-                    }), "*");
-                  } catch (err) {
-                    console.error("Muting iframe failed", err);
-                  }
-                }}
+                onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
               />
             </div>
           ) : (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
-                src="https://www.youtube.com/embed/stOUY3bMvxA?autoplay=1&mute=1&loop=1&playlist=stOUY3bMvxA&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
+                src="https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
                 className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
                 loading="lazy"
                 title="Dark Mode Background Video"
-                onLoad={(e) => {
-                  try {
-                    const iframe = e.target as HTMLIFrameElement;
-                    iframe.contentWindow?.postMessage(JSON.stringify({
-                      event: "command",
-                      func: "mute",
-                      args: []
-                    }), "*");
-                    iframe.contentWindow?.postMessage(JSON.stringify({
-                      event: "command",
-                      func: "setVolume",
-                      args: [0]
-                    }), "*");
-                  } catch (err) {
-                    console.error("Muting iframe failed", err);
-                  }
-                }}
+                onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
               />
             </div>
           )}
