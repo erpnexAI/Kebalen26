@@ -65,7 +65,7 @@ export default function App() {
           {isDayMode ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
-                src="https://www.youtube.com/embed/_zsRVbna2s8?autoplay=1&mute=1&loop=1&playlist=_zsRVbna2s8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
+                src="https://www.youtube.com/embed/KCIFLPstg_4?autoplay=1&mute=1&loop=1&playlist=KCIFLPstg_4&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
                 className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
@@ -93,7 +93,7 @@ export default function App() {
           ) : (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
-                src="https://www.youtube.com/embed/xMUlyzfhKp4?autoplay=1&mute=1&loop=1&playlist=xMUlyzfhKp4&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
+                src="https://www.youtube.com/embed/stOUY3bMvxA?autoplay=1&mute=1&loop=1&playlist=stOUY3bMvxA&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
                 className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
