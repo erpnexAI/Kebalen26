@@ -68,13 +68,13 @@ html, body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(1.05);
+  transform: translate(-49%, -50%) scale(1.05);
   pointer-events: none;
 }
 
 @media (max-width: 768px) {
   .video-background-iframe {
-    transform: translate(-47%, -50%) scale(1.15);
+    transform: translate(-46%, -50%) scale(1.15);
   }
 }
 
