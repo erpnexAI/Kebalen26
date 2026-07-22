@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ArrowRight, Menu, X, Sun, Moon } from "lucide-react";
+import { ArrowRight, Menu, X, Sun, Moon, Mic, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassToggle } from "./components/GlassToggle";
@@ -12,11 +12,13 @@ import { VisionMissionSection } from "./components/VisionMissionSection";
 import { ProgramKegiatanSection } from "./components/ProgramKegiatanSection";
 import { OurTeamSection } from "./components/OurTeamSection";
 import { NewsSection } from "./components/NewsSection";
+import { AdminPanelModal } from "./components/AdminPanelModal";
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDayMode, setIsDayMode] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
   const [isNavHidden, setIsNavHidden] = useState(false);
   const navItems = ["About", "Programs", "Our Team", "News"];
@@ -56,14 +58,18 @@ export default function App() {
         {/* Hero Viewport Wrapper */}
         <div className="relative w-full h-screen overflow-hidden">
           {/* Background */}
-          <div className="hero">
+          <div className="hero bg-gradient-to-b from-black via-[#0d130e] to-black">
+            {/* Fallback ambient poster background for instant 0ms visual render */}
+            <div className={`absolute inset-0 transition-opacity duration-1000 ${isDayMode ? "bg-gradient-to-br from-emerald-100/40 via-stone-200 to-white opacity-90" : "bg-gradient-to-br from-stone-950 via-emerald-950/20 to-black opacity-90"}`} />
+
           {isDayMode ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
                 src="https://www.youtube.com/embed/_zsRVbna2s8?autoplay=1&mute=1&loop=1&playlist=_zsRVbna2s8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
-                className="video-background-iframe"
+                className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
+                loading="lazy"
                 title="Day Mode Background Video"
                 onLoad={(e) => {
                   try {
@@ -88,9 +94,10 @@ export default function App() {
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <iframe
                 src="https://www.youtube.com/embed/xMUlyzfhKp4?autoplay=1&mute=1&loop=1&playlist=xMUlyzfhKp4&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
-                className="video-background-iframe"
+                className="video-background-iframe opacity-85 transition-opacity duration-1000"
                 frameBorder="0"
                 allow="autoplay; encrypted-media"
+                loading="lazy"
                 title="Dark Mode Background Video"
                 onLoad={(e) => {
                   try {
@@ -114,8 +121,8 @@ export default function App() {
           )}
         </div>
 
-        {/* Navbar Wrapper with Rotating Light Frame & Authentic Glassmorphism (70% Scale with Smooth Fade Out on Scroll) */}
-        <div className={`fixed top-3 left-1/2 -translate-x-1/2 scale-[0.7] origin-top z-50 p-[1.5px] rounded-[40px] overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-all duration-700 ease-in-out ${
+        {/* Navbar Wrapper with Rotating Light Frame & Authentic Glassmorphism (80% Scale with Smooth Fade Out on Scroll) */}
+        <div className={`fixed top-3 left-1/2 -translate-x-1/2 scale-[0.80] origin-top z-50 p-[1.5px] rounded-[40px] overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-all duration-700 ease-in-out ${
           isNavHidden 
             ? "opacity-0 pointer-events-none -translate-y-6" 
             : "opacity-100 pointer-events-auto translate-y-0"
@@ -156,6 +163,36 @@ export default function App() {
                 {item}
               </button>
             ))}
+
+            {/* AI Voice Conversation Icon Button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setIsLabOpen(true);
+              }}
+              title="AI Voice Conversation"
+              className="relative p-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)] group"
+            >
+              <Mic className="w-4 h-4 animate-pulse" />
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-emerald-300 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-emerald-500/30">
+                AI Voice
+              </span>
+            </button>
+
+            {/* Portal Admin & Client Handover Button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setIsAdminOpen(true);
+              }}
+              title="Portal Admin & Handover Klien"
+              className="relative p-2 rounded-full bg-stone-800/80 border border-stone-600/50 text-stone-300 hover:bg-stone-700 hover:text-emerald-400 transition-all duration-300 cursor-pointer flex items-center justify-center group"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-stone-200 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-stone-700">
+                Admin
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -202,19 +239,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Scroll Down Indicator */}
-        <div 
-          onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer"
-        >
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className={`w-5 h-8 rounded-full border-2 flex justify-center p-1 ${isDayMode ? "border-stone-500" : "border-stone-400"}`}
-          >
-            <div className={`w-1.5 h-1.5 rounded-full ${isDayMode ? "bg-stone-700" : "bg-stone-300"}`} />
-          </motion.div>
-        </div>
+
 
         {/* Close of Hero Viewport Wrapper */}
         </div>
@@ -248,12 +273,28 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Experimental Lab Section Overlay */}
+        {/* Floating Quick Admin Trigger Button */}
+        <button
+          onClick={() => setIsAdminOpen(true)}
+          className="fixed bottom-4 right-4 z-40 px-3.5 py-2 rounded-full bg-stone-900/90 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-300 backdrop-blur-md shadow-xl flex items-center gap-2 text-xs font-mono font-bold group cursor-pointer"
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:text-black" />
+          <span className="hidden sm:inline">Portal Admin RW26</span>
+        </button>
+
+        {/* AI Voice Conversation Modal */}
         <LabSection 
           isOpen={isLabOpen} 
           onClose={() => setIsLabOpen(false)} 
           isDayMode={isDayMode} 
           setIsDayMode={setIsDayMode} 
+        />
+
+        {/* Admin & Client Handover Panel Modal */}
+        <AdminPanelModal
+          isOpen={isAdminOpen}
+          onClose={() => setIsAdminOpen(false)}
+          isDayMode={isDayMode}
         />
       </div>
     </div>

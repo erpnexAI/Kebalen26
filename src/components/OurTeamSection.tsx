@@ -5,7 +5,8 @@ import {
   Shield, 
   Flame, 
   Activity, 
-  Briefcase 
+  Briefcase,
+  Bot
 } from "lucide-react";
 
 interface Particle {
@@ -32,6 +33,7 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
   const [isHoveringCard, setIsHoveringCard] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -210,6 +212,17 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
       quote: "Menanam benih kecakapan digital di tanah subur kreativitas pemuda rukun warga.",
       skills: ["IoT Architecture", "Next.js/React", "Smart Farm"],
       image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop"
+    },
+    {
+      id: "06",
+      role: "NOTULEN & ASISTEN WARGA",
+      roleIcon: <Bot className="w-3.5 h-3.5 text-emerald-400" />,
+      name: "Naswa",
+      meta: "NOTULEN & VOICE ASSISTANT",
+      desc: "Notulen dan Asisten Warga berusia 25 tahun yang selalu menjawab pertanyaan warga dengan ceria, ramah, sopan, dan seolah tersenyum.",
+      quote: "Melayani seluruh warga RW26 dengan senyum ceria, ramah, dan tanggap sesuai pertanyaan.",
+      skills: ["Notula Digital", "Voice AI", "Layanan Warga"],
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop"
     }
   ];
 
@@ -333,12 +346,13 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
           {teamMembers.map((member) => (
             <div
               key={member.id}
+              onClick={() => setSelectedMember(member)}
               onMouseEnter={() => setIsHoveringCard(true)}
               onMouseLeave={() => setIsHoveringCard(false)}
               className={`group relative flex-1 md:hover:flex-[2.5] lg:hover:flex-[2.8] transition-[flex,transform,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col justify-between rounded-[24px] p-5 sm:p-6 border overflow-hidden cursor-pointer ${
                 isDayMode 
-                  ? "bg-white/90 backdrop-blur border-stone-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.08)]" 
-                  : "bg-stone-950/90 backdrop-blur-md border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.15)]"
+                  ? "bg-white/90 backdrop-blur border-stone-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.08)] hover:border-emerald-500/40" 
+                  : "bg-stone-950/90 backdrop-blur-md border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.2)] hover:border-emerald-500/40"
               }`}
             >
               {/* Glowing Tech Mesh inside card */}
@@ -370,6 +384,13 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-105"
                 />
+                
+                {/* Hover Cybernetic HUD Scanline */}
+                <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex items-end p-3">
+                  <span className="text-[9px] font-mono bg-black/70 backdrop-blur-md text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">
+                    [CLICK TO INSPECT NODE]
+                  </span>
+                </div>
               </div>
 
               {/* Mid Section: Custom status code */}
@@ -437,6 +458,111 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
         </div>
 
       </div>
+
+      {/* Futuristic Holographic Inspect Modal Dialog */}
+      {selectedMember && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn"
+          onClick={() => setSelectedMember(null)}
+        >
+          <div 
+            className={`relative w-full max-w-2xl rounded-3xl p-6 sm:p-8 border shadow-2xl overflow-hidden ${
+              isDayMode 
+                ? "bg-white/95 border-emerald-500/30 text-stone-900 shadow-[0_25px_60px_rgba(16,185,129,0.15)]" 
+                : "bg-stone-950/95 border-emerald-500/40 text-[#E1E0CC] shadow-[0_25px_70px_rgba(0,0,0,0.8)]"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Holographic Glowing Header Accent */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-emerald-400 to-amber-400 animate-pulse" />
+
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedMember(null)}
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-stone-500/10 border border-stone-500/20 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+              {/* Modal Portrait with Glowing Border */}
+              <div className="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.3)]">
+                <img 
+                  src={selectedMember.image} 
+                  alt={selectedMember.name} 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-mono text-emerald-400 border border-emerald-500/30">
+                  NODE_{selectedMember.id}
+                </div>
+              </div>
+
+              {/* Details & Quote */}
+              <div className="space-y-4 flex-grow text-center sm:text-left">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-[#E6C15C] uppercase px-2 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">
+                      {selectedMember.role}
+                    </span>
+                    <span className="text-[10px] font-mono text-cyan-400 tracking-wider">
+                      {selectedMember.meta}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight">
+                    {selectedMember.name}
+                  </h3>
+                </div>
+
+                {/* Direct Quote Box */}
+                <div className={`p-4 rounded-xl border italic text-xs leading-relaxed ${
+                  isDayMode 
+                    ? "bg-emerald-500/5 border-emerald-500/20 text-stone-700" 
+                    : "bg-emerald-500/10 border-emerald-500/30 text-emerald-200"
+                }`}>
+                  "{selectedMember.quote}"
+                </div>
+
+                <p className={`text-xs font-light leading-relaxed ${
+                  isDayMode ? "text-stone-600" : "text-stone-300"
+                }`}>
+                  {selectedMember.desc}
+                </p>
+
+                {/* Skill Nodes */}
+                <div className="pt-2">
+                  <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block mb-2">
+                    VERIFIED SKILL PROTOCOLS:
+                  </span>
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-1.5">
+                    {selectedMember.skills.map((s: string) => (
+                      <span 
+                        key={s}
+                        className="text-[9px] font-mono px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                      >
+                        #{s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="mt-8 pt-4 border-t border-stone-500/10 flex items-center justify-between">
+              <span className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">
+                SECURE_HASH: 0x26_TEAM_{selectedMember.id}
+              </span>
+              <button
+                onClick={() => setSelectedMember(null)}
+                className="px-5 py-2 rounded-xl bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider hover:bg-emerald-400 transition-all cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+              >
+                Close Inspect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

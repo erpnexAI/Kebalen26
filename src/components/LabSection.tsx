@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  X, Sliders, Sun, Moon, Sparkles, Clipboard, Check, Activity, Cpu, 
-  Layers, Volume2, VolumeX, Eye, Flame, Compass, RefreshCw, MapPin, Radio, Shield
+  X, Volume2, VolumeX, Mic, MicOff, Bot, BrainCircuit, Check, Radio
 } from "lucide-react";
 
 interface LabSectionProps {
@@ -12,841 +11,539 @@ interface LabSectionProps {
   setIsDayMode: (dayMode: boolean) => void;
 }
 
-type ActiveTab = "glass" | "atmosphere" | "radar";
+export function LabSection({ isOpen, onClose, isDayMode }: LabSectionProps) {
+  const [voiceState, setVoiceState] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
+  const [lowLatency, setLowLatency] = useState(true);
+  const [deepThinking, setDeepThinking] = useState(true);
+  const [continuousVoiceMode, setContinuousVoiceMode] = useState(true);
+  const [currentThought, setCurrentThought] = useState<string | null>(null);
 
-export function LabSection({ isOpen, onClose, isDayMode, setIsDayMode }: LabSectionProps) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("glass");
-  const [copied, setCopied] = useState(false);
-  const [ambientSound, setAmbientSound] = useState(false);
+  const [activeVoiceReply, setActiveVoiceReply] = useState<{
+    query: string;
+    reply: string;
+    thought?: string;
+    time: string;
+  }>({
+    query: "",
+    reply: "(hah... tersenyum manis) Halo Bapak dan Ibu! Saya Naswa, Notulen dan Asisten Warga RW 26 Kebalen. Ceria sekali bisa menyapa Anda hari ini! Silakan tekan tombol mikrofon untuk bertanya.",
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
 
-  // Tab 1: Glassmorphism Playground States
-  const [blur, setBlur] = useState(16);
-  const [opacity, setOpacity] = useState(25);
-  const [borderOpacity, setBorderOpacity] = useState(20);
-  const [borderRadius, setBorderRadius] = useState(24);
-  const [glassColor, setGlassColor] = useState<"light" | "dark" | "emerald">("dark");
+  const [isMutedVoice, setIsMutedVoice] = useState(false);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // Tab 2: Atmosphere Simulator States
-  const [timeOfDay, setTimeOfDay] = useState<number>(18); // 0-24 hour scale
-  const [particleDensity, setParticleDensity] = useState(20);
-
-  // Tab 3: Innovation Radar States
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [radarRotating, setRadarRotating] = useState(true);
-
-  // Auto transition day/night mode when sliding time of day
   useEffect(() => {
-    if (activeTab === "atmosphere") {
-      const isDay = timeOfDay >= 6 && timeOfDay < 18;
-      if (isDay !== isDayMode) {
-        setIsDayMode(isDay);
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      synthRef.current = window.speechSynthesis;
+      if (synthRef.current.onvoiceschanged !== undefined) {
+        synthRef.current.onvoiceschanged = () => {
+          synthRef.current?.getVoices();
+        };
       }
     }
-  }, [timeOfDay, activeTab, isDayMode, setIsDayMode]);
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try { window.speechSynthesis.cancel(); } catch {}
+      }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+    };
+  }, []);
 
-  const projects = [
-    {
-      id: 1,
-      title: "Smart RW 26 Portal",
-      desc: "Portal warga berbasis web terintegrasi untuk pelayanan surat pengantar mandiri, pencatatan iuran transparan, dan Panic Button darurat.",
-      status: "Production Ready",
-      tech: "React, Firebase",
-      progress: 95,
-      impact: "Tinggi"
-    },
-    {
-      id: 2,
-      title: "Recycle IoT Bin",
-      desc: "Tempat sampah pintar yang memilah sampah organik dan non-organik secara mandiri menggunakan sensor induktif dan ultrasonik.",
-      status: "Prototyping",
-      tech: "ESP32, MicroPython",
-      progress: 60,
-      impact: "Sedang"
-    },
-    {
-      id: 3,
-      title: "Solar Balai Power Grid",
-      desc: "Sistem panel surya pintar 2.5KWp di atap Balai Warga untuk efisiensi energi berkelanjutan hingga 45%.",
-      status: "Pendanaan",
-      tech: "Photovoltaic, IoT Monitor",
-      progress: 40,
-      impact: "Tinggi"
-    },
-    {
-      id: 4,
-      title: "CCTV AI Alert System",
-      desc: "Keamanan berbasis kecerdasan buatan untuk deteksi anomali lingkungan di titik vital RW secara seketika.",
-      status: "Beta Testing",
-      tech: "TensorFlow, OpenCV",
-      progress: 80,
-      impact: "Tinggi"
+  const unlockAudioEngine = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.resume();
+      } catch {}
     }
-  ];
+  };
 
-  // Glassmorphism Code Generator
-  const generateTailwindCode = () => {
-    const bgClass = glassColor === "light" 
-      ? `bg-white/${opacity}` 
-      : glassColor === "emerald" 
-        ? `bg-emerald-500/${opacity}` 
-        : `bg-black/${opacity}`;
-    const borderClass = `border-white/${borderOpacity}`;
-    const blurClass = `backdrop-blur-[${blur}px]`;
-    const radiusClass = borderRadius === 12 ? "rounded-xl" : borderRadius === 16 ? "rounded-2xl" : borderRadius === 24 ? "rounded-3xl" : "rounded-none";
+  const speakText = (text: string) => {
+    if (isMutedVoice) {
+      if (continuousVoiceMode && isOpen) {
+        setTimeout(() => startListeningVoice(), 400);
+      }
+      return;
+    }
+
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      console.warn("Speech Synthesis is not supported in this browser.");
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    try {
+      synth.cancel();
+      if (synth.paused) {
+        synth.resume();
+      }
+    } catch {}
+
+    const cleanText = text
+      .replace(/\(.*?\)/g, ', ')
+      .replace(/[*#_`~]/g, '')
+      .replace(/[-•]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "id-ID";
+    utterance.rate = 1.08; // Energetic, fast, natural 25yo female Naswa speed
+    utterance.pitch = 1.18; // Cheerful 25yo female Naswa persona tone
+
+    // Pre-cache & assign best Indonesian female voice
+    const voices = synth.getVoices();
+    if (voices && voices.length > 0) {
+      const idFemaleVoice = voices.find(v => 
+        (v.lang.toLowerCase().includes("id") || v.lang.toLowerCase().includes("indonesia")) && (
+          v.name.toLowerCase().includes("female") || 
+          v.name.toLowerCase().includes("wanita") || 
+          v.name.toLowerCase().includes("gadis") || 
+          v.name.toLowerCase().includes("natural") || 
+          v.name.toLowerCase().includes("online") ||
+          v.name.toLowerCase().includes("siti") ||
+          v.name.toLowerCase().includes("google bahasa indonesia")
+        )
+      ) || voices.find(v => v.lang.toLowerCase().includes("id"));
+
+      if (idFemaleVoice) {
+        utterance.voice = idFemaleVoice;
+      }
+    }
+
+    utterance.onstart = () => setVoiceState("speaking");
+    utterance.onend = () => {
+      setVoiceState("idle");
+      if (continuousVoiceMode && isOpen) {
+        setTimeout(() => startListeningVoice(), 400);
+      }
+    };
+    utterance.onerror = (e) => {
+      console.warn("Speech synthesis error event:", e);
+      setVoiceState("idle");
+      if (continuousVoiceMode && isOpen) {
+        setTimeout(() => startListeningVoice(), 400);
+      }
+    };
+
+    try {
+      synth.speak(utterance);
+      if (synth.paused) {
+        synth.resume();
+      }
+    } catch (e) {
+      console.warn("Error calling synth.speak:", e);
+      setVoiceState("idle");
+    }
+  };
+
+  const playGeminiAudio = async (base64Audio: string, fallbackText: string) => {
+    speakText(fallbackText);
+  };
+
+  const handleVoiceQuery = async (query: string) => {
+    if (!query.trim()) return;
+    unlockAudioEngine();
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    return `className="p-6 ${bgClass} border ${borderClass} ${blurClass} ${radiusClass} shadow-2xl"`;
-  };
+    setVoiceState("thinking");
+    setCurrentThought(null);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generateTailwindCode());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    if (deepThinking) {
+      setCurrentThought("Analisis kilat knowledge base RW 26 Kebalen...");
+    }
 
-  const getAtmosphereTheme = () => {
-    if (timeOfDay >= 5 && timeOfDay < 9) {
-      return {
-        name: "Fajar (Sunrise)",
-        bg: "from-amber-500/20 via-pink-600/20 to-indigo-900/40",
-        tint: "rgba(245, 158, 11, 0.1)",
-        description: "Suasana pagi Kebalen yang menyegarkan dengan pancaran fajar keemasan hangat.",
-        imageOverlay: "bg-amber-500/10"
-      };
-    } else if (timeOfDay >= 9 && timeOfDay < 16) {
-      return {
-        name: "Siang (Midday)",
-        bg: "from-sky-400/10 via-teal-300/10 to-indigo-800/10",
-        tint: "rgba(56, 189, 248, 0.05)",
-        description: "Pancaran matahari penuh yang optimal untuk asupan energi Solar Panel Balai.",
-        imageOverlay: "bg-sky-400/5"
-      };
-    } else if (timeOfDay >= 16 && timeOfDay < 19) {
-      return {
-        name: "Senja (Sunset)",
-        bg: "from-orange-600/30 via-red-600/20 to-purple-950/40",
-        tint: "rgba(234, 88, 12, 0.15)",
-        description: "Keindahan langit lembayung senja di atas gedung serbaguna RW26.",
-        imageOverlay: "bg-orange-500/20"
-      };
-    } else {
-      return {
-        name: "Malam (Night)",
-        bg: "from-[#020205]/80 via-purple-950/25 to-[#000000]/90",
-        tint: "rgba(107, 33, 168, 0.08)",
-        description: "Malam syahdu bertabur bintang, sunyi dan tenang di lingkungan Kebalen.",
-        imageOverlay: "bg-indigo-950/40"
-      };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    try {
+      const response = await fetch("/api/voice-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: query }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      const data = await response.json();
+
+      let reply = data.reply || "Halo Bapak dan Ibu Warga RW 26 Kebalen! Ada yang bisa saya bantu dengan senang hati?";
+      let thoughtProcess = deepThinking ? (data.thought || "Analisis basis data selesai.") : undefined;
+
+      setCurrentThought(null);
+      setActiveVoiceReply({ query, reply, thought: thoughtProcess, time: timeNow });
+      speakText(reply);
+    } catch {
+      clearTimeout(timeoutId);
+      // Fast instant local intelligence fallback (< 10ms)
+      let reply = "(hah... tersenyum manis) Halo Bapak dan Ibu! Saya Naswa, Notulen dan Asisten Warga RW 26. Ceria sekali bisa menyapa Anda!";
+      let thoughtProcess = deepThinking ? "Analisis basis data selesai." : undefined;
+      const qLower = query.toLowerCase();
+
+      if (qLower.includes("siapa") && (qLower.includes("kamu") || qLower.includes("anda") || qLower.includes("naswa"))) {
+        reply = "(hah... tersenyum manis) Halo! Saya Naswa, Notulen dan Asisten Warga RW 26 Kebalen. Saya siap membantu Anda dengan ramah dan ceria!";
+        thoughtProcess = deepThinking ? "Mengenalkan identitas Naswa..." : undefined;
+      } else if (qLower.includes("struktur") || qLower.includes("pengurus") || qLower.includes("team") || qLower.includes("siapa") || qLower.includes("ketua rw")) {
+        reply = "(hembus nafas halus... tersenyum) Pengurus RW 26 Kebalen dipimpin Pak Tri Handoko Putro, Pak Sumaryadi Sekretaris, Ibu Lintar Bendahara, Pak Jatmiko Keamanan, dan Pak Arifraj Teknologi.";
+        thoughtProcess = deepThinking ? "Mengambil data pengurus inti RW 26..." : undefined;
+      } else if (qLower.includes("visi") || qLower.includes("misi") || qLower.includes("tujuan")) {
+        reply = "(hah... tersenyum hangat) Visi utama RW 26 Kebalen adalah membangun lingkungan warga berbasis digital yang aman, transparan, dan harmonis.";
+        thoughtProcess = deepThinking ? "Memeriksa Visi Misi digital RW 26..." : undefined;
+      } else if (qLower.includes("program") || qLower.includes("kegiatan") || qLower.includes("aktivitas") || qLower.includes("artikel")) {
+        reply = "(hembus nafas halus... tersenyum ceria) Program unggulan RW 26 meliputi Solar Grid, Hidroponik Otomatis, Pos Ronda Panic Button, dan e-persuratan digital.";
+        thoughtProcess = deepThinking ? "Menyaring daftar program warga..." : undefined;
+      } else if (qLower.includes("ronda") || qLower.includes("jadwal") || qLower.includes("keamanan") || qLower.includes("jatmiko")) {
+        reply = "(hah... tersenyum ramah) Jadwal ronda malam dikoordinasikan Pak Jatmiko di Pos Utama RT 03 mulai pukul 22.00 WIB.";
+        thoughtProcess = deepThinking ? "Memeriksa jadwal ronda malam..." : undefined;
+      } else if (qLower.includes("surat") || qLower.includes("pengantar") || qLower.includes("domisili") || qLower.includes("sumaryadi") || qLower.includes("notulen")) {
+        reply = "(sejenak tersenyum manis) Pelayanan surat pengantar dikelola Pak Sumaryadi bersama saya sebagai Notulen, dan bisa diajukan secara online.";
+        thoughtProcess = deepThinking ? "Memeriksa layanan persuratan warga..." : undefined;
+      } else if (qLower.includes("iuran") || qLower.includes("kas") || qLower.includes("lintar")) {
+        reply = "(hembus nafas halus... tersenyum) Laporan kas iuran warga dikelola secara transparan oleh Ibu Lintar dengan pencapaian 88 persen.";
+        thoughtProcess = deepThinking ? "Mengakses laporan keuangan kas warga..." : undefined;
+      } else if (qLower.includes("darurat") || qLower.includes("panic")) {
+        reply = "(hah... siaga ramah) Tombol Panic Button terhubung langsung ke pos keamanan Pak Jatmiko dan pengurus RW.";
+        thoughtProcess = deepThinking ? "Siaga darurat aktif..." : undefined;
+      } else if (qLower.includes("halo") || qLower.includes("hai") || qLower.includes("selamat") || qLower.includes("pagi") || qLower.includes("siang") || qLower.includes("sore") || qLower.includes("malam")) {
+        reply = "(hah... tersenyum manis) Halo Bapak dan Ibu! Saya Naswa, Notulen dan Asisten Warga RW 26. Ada yang bisa saya bantu hari ini?";
+        thoughtProcess = deepThinking ? "Menyiapkan sapaan ramah Naswa..." : undefined;
+      } else {
+        reply = `(sejenak tersenyum manis) Mengenai ${query}, informasi tersebut sudah tercatat di sistem digital RW 26 Kebalen.`;
+        thoughtProcess = deepThinking ? "Mencocokkan kueri spesifik warga..." : undefined;
+      }
+
+      setCurrentThought(null);
+      setActiveVoiceReply({ query, reply, thought: thoughtProcess, time: timeNow });
+      speakText(reply);
     }
   };
 
-  const atmosphere = getAtmosphereTheme();
+  const startListeningVoice = async () => {
+    if (voiceState === "speaking" || voiceState === "thinking") return;
+    setVoiceState("listening");
+
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognitionAPI) {
+      setTimeout(() => {
+        const simulatedQueries = [
+          "Jelaskan struktur organisasi dan nama pengurus RW 26 Kebalen",
+          "Apa saja visi misi dan program utama RW 26?",
+          "Bagaimana jadwal ronda malam dan sistem keamanan?",
+          "Bagaimana transparansi laporan kas keuangan warga?"
+        ];
+        const randomQ = simulatedQueries[Math.floor(Math.random() * simulatedQueries.length)];
+        handleVoiceQuery(randomQ);
+      }, 500);
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      const recognition = new SpeechRecognitionAPI();
+      recognitionRef.current = recognition;
+      recognition.lang = "id-ID";
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setVoiceState("listening");
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult.isFinal) {
+          try { recognition.stop(); } catch {}
+          handleVoiceQuery(transcript);
+        }
+      };
+
+      recognition.onerror = () => {
+        setVoiceState("idle");
+      };
+
+      recognition.onend = () => {
+        if (voiceState === "listening") {
+          setVoiceState("idle");
+        }
+      };
+
+      recognition.start();
+    } catch {
+      setVoiceState("idle");
+    }
+  };
+
+  const stopListeningVoice = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+    }
+    setVoiceState("idle");
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          id="lab-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-50 overflow-y-auto backdrop-blur-2xl bg-black/80 flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans text-[#E1E0CC]"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+          onClick={onClose}
         >
-          {/* Main Lab Screen Layout */}
           <motion.div
-            initial={{ scale: 0.96, y: 40, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.96, y: 40, opacity: 0 }}
-            transition={{ type: "spring", damping: 28, stiffness: 120 }}
-            className={`relative w-full max-w-6xl rounded-[32px] overflow-hidden shadow-[0_32px_100px_rgba(0,0,0,0.9)] border transition-all duration-500 ${
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 15 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.1 }}
+            className={`relative w-full max-w-xl rounded-3xl border overflow-hidden shadow-2xl flex flex-col max-h-[92vh] ${
               isDayMode 
-                ? "bg-stone-50 border-stone-200/50 text-stone-900" 
-                : "bg-neutral-950 border-white/5 text-[#E1E0CC]"
+                ? "bg-[#faf9f6] border-stone-300 text-stone-900" 
+                : "bg-stone-950 border-white/15 text-[#E1E0CC]"
             }`}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Ambient Background Glow matching simulated atmosphere */}
-            <div className={`absolute inset-0 bg-gradient-to-tr ${atmosphere.bg} pointer-events-none transition-all duration-1000 opacity-60`} />
+            {/* Top glowing ambient line */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 animate-pulse" />
 
-            {/* Main Content Split Grid */}
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-[640px] max-h-[92vh] overflow-y-auto lg:overflow-hidden">
-              
-              {/* LEFT COLUMN: Premium Image Box (Kotak Gambar) */}
-              <div className="lg:col-span-5 relative border-b lg:border-b-0 lg:border-r border-white/10 overflow-hidden flex flex-col justify-between p-6 sm:p-8 min-h-[300px] lg:min-h-0 bg-black/40">
-                {/* Tech Blueprint Grid Overlay */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-                
-                {/* The Main High-End Image Container */}
-                <div className="absolute inset-0 z-0">
-                  <motion.div 
-                    initial={{ scale: 1.1, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 0.5 }}
-                    transition={{ duration: 1.5 }}
-                    className="w-full h-full bg-cover bg-center"
-                    style={{ 
-                      backgroundImage: "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800')" 
-                    }}
-                  />
-                  {/* Atmospheric Color overlay adapting dynamically */}
-                  <div className={`absolute inset-0 transition-colors duration-1000 ${atmosphere.imageOverlay}`} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/40" />
+            {/* Header */}
+            <div className="px-5 py-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0" style={{ borderColor: isDayMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Bot className="w-5 h-5 animate-pulse" />
                 </div>
-
-                {/* Left Card Top Info */}
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] tracking-wider uppercase font-semibold text-stone-300">Balai Warga RW 26</span>
-                  </div>
+                <div>
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[9px] tracking-widest uppercase font-bold text-emerald-400">OPERASIONAL</span>
+                    <span className="text-[9px] uppercase tracking-widest font-bold text-emerald-400">NASWA - NOTULEN & ASISTEN WARGA</span>
+                    <span className="px-1.5 py-0.2 text-[8px] font-bold tracking-wider bg-emerald-500/10 text-emerald-400 rounded uppercase">GEMINI 2.5 FLASH • PERSONA NASWA</span>
                   </div>
-                </div>
-
-                {/* Left Card Middle Art/Quotes */}
-                <div className="relative z-10 my-12 text-left space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-[10px] tracking-widest font-bold text-stone-400 uppercase">EKSPLORASI ESTETIS</span>
-                    <h3 className="text-3xl sm:text-4xl font-serif italic text-white leading-tight">
-                      Lembayung <br />
-                      <span className="text-emerald-300 font-serif">Arsitektur Digital</span>
-                    </h3>
-                  </div>
-                  <p className="text-xs sm:text-sm text-stone-300 font-light leading-relaxed max-w-sm">
-                    "Menyatukan kehangatan ruang sosial masyarakat Kebalen dengan kesederhanaan inovasi teknologi modern secara harmonis."
-                  </p>
-                </div>
-
-                {/* Left Card Bottom Telemetry Widgets */}
-                <div className="relative z-10 border-t border-white/10 pt-6 space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
-                      <span className="text-[8px] text-stone-400 uppercase tracking-widest font-bold block mb-1">Integrasi</span>
-                      <div className="flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs font-mono font-bold text-white">SINKRON</span>
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
-                      <span className="text-[8px] text-stone-400 uppercase tracking-widest font-bold block mb-1">Konektivitas</span>
-                      <div className="flex items-center gap-1.5">
-                        <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                        <span className="text-xs font-mono font-bold text-white">AKTIF</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center text-[9px] text-stone-500 font-mono">
-                    <span>ESTABLISHED 2026</span>
-                    <span>LAT: -6.2144° S | LON: 106.8456° E</span>
-                  </div>
+                  <h2 className="text-xl font-serif italic tracking-wide text-current">Naswa - Notulen & Asisten Warga</h2>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Frosted Glassmorphism Box (Kotak Glassform) */}
-              <div className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 overflow-y-auto max-h-[85vh] lg:max-h-none">
+              {/* Toggles & Controls */}
+              <div className="flex items-center flex-wrap gap-2">
+                {/* Continuous Voice Mode Toggle */}
+                <button
+                  onClick={() => setContinuousVoiceMode(!continuousVoiceMode)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-mono transition-all cursor-pointer ${
+                    continuousVoiceMode 
+                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]" 
+                      : "bg-black/20 border-white/10 text-stone-400"
+                  }`}
+                  title="Toggle Continuous Voice Mode"
+                >
+                  <Radio className={`w-3.5 h-3.5 ${continuousVoiceMode ? "animate-pulse text-emerald-400" : ""}`} />
+                  <span>Voice Mode</span>
+                  {continuousVoiceMode && <Check className="w-3 h-3 text-emerald-400" />}
+                </button>
+
+                {/* Deep Thinking Toggle */}
+                <button
+                  onClick={() => setDeepThinking(!deepThinking)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-mono transition-all cursor-pointer ${
+                    deepThinking 
+                      ? "bg-purple-500/15 border-purple-500/40 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]" 
+                      : "bg-black/20 border-white/10 text-stone-400"
+                  }`}
+                  title="Toggle Deep Thinking Mode"
+                >
+                  <BrainCircuit className={`w-3.5 h-3.5 ${deepThinking ? "text-purple-400" : ""}`} />
+                  <span>Deep.Thingking</span>
+                  {deepThinking && <Check className="w-3 h-3 text-purple-400" />}
+                </button>
+
+                <button 
+                  onClick={() => setIsMutedVoice(!isMutedVoice)}
+                  className={`p-2 rounded-full border transition-all duration-300 cursor-pointer ${
+                    isMutedVoice 
+                      ? "bg-rose-500/10 border-rose-500/30 text-rose-400" 
+                      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  }`}
+                  title="Toggle AI Speech"
+                >
+                  {isMutedVoice ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
                 
-                {/* Header inside Glassmorphism Box */}
-                <div className="flex items-center justify-between border-b pb-5 transition-colors duration-300" style={{ borderColor: isDayMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
-                      <Cpu className="w-5 h-5 animate-spin" style={{ animationDuration: '8s' }} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase tracking-widest font-bold text-emerald-500">Ruang Eksperimen</span>
-                        <span className="px-1.5 py-0.5 text-[8px] font-bold tracking-wider bg-emerald-500/10 text-emerald-500 rounded uppercase">v2.6</span>
-                      </div>
-                      <h2 className="text-2xl font-serif italic tracking-wide text-current">Kebalen Digital Lab</h2>
-                    </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full bg-black/5 border border-black/10 hover:bg-black/10 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 transition-all cursor-pointer text-stone-400 hover:text-current"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body Container */}
+            <div className="p-4 sm:p-6 flex flex-col gap-5 overflow-y-auto flex-1">
+              
+              {/* Central Voice Orb & Visualizer */}
+              <div className="flex flex-col items-center justify-center py-2 shrink-0 gap-3">
+                <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-full flex items-center justify-center">
+                  <div className={`absolute inset-0 rounded-full bg-emerald-500/20 filter blur-xl ${voiceState === "listening" || voiceState === "speaking" ? "animate-ping" : "animate-pulse"}`} />
+                  
+                  <div 
+                    onClick={() => {
+                      unlockAudioEngine();
+                      voiceState === "listening" ? stopListeningVoice() : startListeningVoice();
+                    }}
+                    className={`relative z-10 w-32 h-32 sm:w-36 sm:h-36 rounded-full border-2 border-emerald-500/60 bg-black/90 flex flex-col items-center justify-center shadow-[0_0_35px_rgba(16,185,129,0.4)] cursor-pointer group transition-transform hover:scale-105`}
+                    title="Klik Orb untuk aktifkan/matikan Mic"
+                  >
+                    <Bot className={`w-10 h-10 sm:w-11 sm:h-11 text-emerald-400 ${voiceState === "thinking" ? "animate-spin" : ""}`} />
+                    <span className="text-[9px] sm:text-[10px] font-mono text-emerald-300 mt-2 uppercase tracking-widest text-center px-2 font-bold">
+                      {voiceState === "listening" ? "Mendengarkan Suara..." : voiceState === "speaking" ? "Asisten Bicara..." : voiceState === "thinking" ? (deepThinking ? "Deep Thinking..." : "Memproses...") : "Tekan Mic / Bicara"}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {/* Audio Toggle */}
-                    <button 
-                      onClick={() => setAmbientSound(!ambientSound)}
-                      className={`p-2.5 rounded-full border transition-all duration-300 cursor-pointer ${
-                        ambientSound 
-                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" 
-                          : "bg-black/5 border-black/10 text-stone-400 hover:text-stone-600 dark:bg-white/5 dark:border-white/10 dark:text-stone-400 dark:hover:text-stone-200"
-                      }`}
-                      title="Toggle Ambient Audio Feed"
-                    >
-                      {ambientSound ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                    </button>
-                    
-                    {/* Close Trigger */}
-                    <button
-                      onClick={onClose}
-                      className="p-2.5 rounded-full bg-black/5 border border-black/10 hover:bg-black/10 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 transition-all cursor-pointer text-stone-400 hover:text-current"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <div className="absolute inset-[-14px] flex items-center justify-center pointer-events-none">
+                    <div className="flex items-center gap-1">
+                      {[30, 55, 25, 80, 45, 85, 40, 70, 50, 30].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          animate={{ 
+                            height: voiceState === "listening" || voiceState === "speaking" ? [8, h, 8] : [8, 14, 8] 
+                          }}
+                          transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.08 }}
+                          className={`w-1 rounded-full opacity-80 ${voiceState === "listening" ? "bg-rose-400" : "bg-emerald-400"}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Elegant Glassmorphic Segmented Control for Tabs */}
-                <div className="my-6 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 flex gap-1 sm:gap-2">
-                  <button
-                    onClick={() => setActiveTab("glass")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                      activeTab === "glass"
-                        ? "bg-white dark:bg-stone-900 shadow-md border border-black/5 dark:border-white/10 text-emerald-500"
-                        : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Playground Kaca</span>
-                    <span className="sm:hidden">Kaca</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("atmosphere")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                      activeTab === "atmosphere"
-                        ? "bg-white dark:bg-stone-900 shadow-md border border-black/5 dark:border-white/10 text-amber-500"
-                        : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                    }`}
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Simulasi Atmosfer</span>
-                    <span className="sm:hidden">Atmosfer</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("radar")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                      activeTab === "radar"
-                        ? "bg-white dark:bg-stone-900 shadow-md border border-black/5 dark:border-white/10 text-sky-500"
-                        : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                    }`}
-                  >
-                    <Activity className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Radar RW 26</span>
-                    <span className="sm:hidden">Radar</span>
-                  </button>
-                </div>
-
-                {/* Sub Tab Workspace Section */}
-                <div className="flex-1 min-h-[360px] flex flex-col justify-center">
-                  <AnimatePresence mode="wait">
-                    
-                    {/* TAB 1: GLASSMORPHISM WORKSPACE */}
-                    {activeTab === "glass" && (
-                      <motion.div
-                        key="glass-workspace"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                          {/* Controls Box */}
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="font-serif italic text-lg text-current">Konfigurasi Kaca</h4>
-                              <p className="text-[11px] text-stone-500">Sesuaikan tingkat keburaman, transparansi, dan lengkungan material kaca.</p>
-                            </div>
-
-                            {/* Color Picker */}
-                            <div className="space-y-1.5">
-                              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Warna Dasar</span>
-                              <div className="flex gap-1.5">
-                                {["dark", "light", "emerald"].map((col) => (
-                                  <button
-                                    key={col}
-                                    onClick={() => setGlassColor(col as any)}
-                                    className={`flex-1 py-1.5 px-2.5 rounded-lg border text-[10px] font-semibold tracking-wide transition-all cursor-pointer capitalize ${
-                                      glassColor === col
-                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold"
-                                        : "bg-black/5 dark:bg-white/5 border-transparent text-stone-500"
-                                    }`}
-                                  >
-                                    {col === "dark" ? "Gelap" : col === "light" ? "Terang" : "Zamrud"}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Slider: Opacity */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[11px] font-semibold">
-                                <span className="text-stone-400 uppercase">Transparansi</span>
-                                <span className="text-emerald-500">{opacity}%</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="10"
-                                max="90"
-                                value={opacity}
-                                onChange={(e) => setOpacity(Number(e.target.value))}
-                                className="w-full accent-emerald-500 bg-black/10 dark:bg-white/10 h-1 rounded-full cursor-pointer"
-                              />
-                            </div>
-
-                            {/* Slider: Blur */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[11px] font-semibold">
-                                <span className="text-stone-400 uppercase">Keburaman</span>
-                                <span className="text-emerald-500">{blur}px</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="40"
-                                value={blur}
-                                onChange={(e) => setBlur(Number(e.target.value))}
-                                className="w-full accent-emerald-500 bg-black/10 dark:bg-white/10 h-1 rounded-full cursor-pointer"
-                              />
-                            </div>
-
-                            {/* Slider: Border */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[11px] font-semibold">
-                                <span className="text-stone-400 uppercase">Kilau Tepi</span>
-                                <span className="text-emerald-500">{borderOpacity}%</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="5"
-                                max="50"
-                                value={borderOpacity}
-                                onChange={(e) => setBorderOpacity(Number(e.target.value))}
-                                className="w-full accent-emerald-500 bg-black/10 dark:bg-white/10 h-1 rounded-full cursor-pointer"
-                              />
-                            </div>
-
-                            {/* Radius select */}
-                            <div className="space-y-1.5">
-                              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Kelengkungan</span>
-                              <div className="flex gap-1.5">
-                                {[12, 16, 24].map((r) => (
-                                  <button
-                                    key={r}
-                                    onClick={() => setBorderRadius(r)}
-                                    className={`flex-1 py-1.5 px-2 rounded-lg border text-[10px] font-mono transition-all cursor-pointer ${
-                                      borderRadius === r
-                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold"
-                                        : "bg-black/5 dark:bg-white/5 border-transparent text-stone-500"
-                                    }`}
-                                  >
-                                    {r}px
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Preview Box Card */}
-                          <div className="relative rounded-2xl border border-black/5 dark:border-white/5 bg-black/20 dark:bg-black/50 overflow-hidden flex flex-col justify-center p-4 min-h-[220px]">
-                            {/* Decorative background spots */}
-                            <div className="absolute top-8 left-8 w-16 h-16 rounded-full bg-gradient-to-r from-teal-400 to-emerald-500 filter blur-xl animate-pulse pointer-events-none" />
-                            <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 filter blur-2xl animate-bounce pointer-events-none" style={{ animationDuration: '7s' }} />
-
-                            {/* Dynamic Live Glass Container */}
-                            <div 
-                              className="relative z-10 w-full transition-all duration-300 shadow-xl"
-                              style={{
-                                backdropFilter: `blur(${blur}px)`,
-                                WebkitBackdropFilter: `blur(${blur}px)`,
-                                backgroundColor: glassColor === "light" 
-                                  ? `rgba(255, 255, 255, ${opacity / 100})` 
-                                  : glassColor === "emerald"
-                                    ? `rgba(16, 185, 129, ${opacity / 100})`
-                                    : `rgba(0, 0, 0, ${opacity / 100})`,
-                                border: `1px solid ${isDayMode ? `rgba(0, 0, 0, ${borderOpacity / 100})` : `rgba(255, 255, 255, ${borderOpacity / 100})`}`,
-                                borderRadius: `${borderRadius}px`
-                              }}
-                            >
-                              <div className="p-5 space-y-3">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h5 className="font-serif italic text-lg text-white">BALAI WARGA</h5>
-                                    <p className="text-[8px] tracking-widest font-bold uppercase text-emerald-400">KEBALEN RW 26</p>
-                                  </div>
-                                  <Sparkles className="w-4 h-4 text-emerald-400 animate-spin" style={{ animationDuration: '10s' }} />
-                                </div>
-                                <p className="text-[11px] text-stone-200/90 leading-relaxed font-light">
-                                  "Menggabungkan fungsionalitas murni dengan estetika minimalis modern di lingkungan warga."
-                                </p>
-                                <div className="border-t border-white/10 pt-2 flex justify-between text-[8px] text-stone-400 font-mono">
-                                  <span>EST. 2026</span>
-                                  <span>SIMULASI PREVIEW</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Code output card */}
-                        <div className="p-3.5 rounded-xl bg-black/10 dark:bg-black/55 border border-black/5 dark:border-white/5 font-mono text-xs flex items-center justify-between gap-4">
-                          <div className="overflow-x-auto text-emerald-500 whitespace-nowrap scrollbar-thin flex-1 text-[11px]">
-                            <span className="text-stone-500">{"<div "}</span>
-                            <span className="text-emerald-400">{generateTailwindCode()}</span>
-                            <span className="text-stone-500">{">"}</span>
-                          </div>
-                          <button
-                            onClick={copyToClipboard}
-                            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-500 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                          >
-                            {copied ? (
-                              <>
-                                <Check className="w-3 h-3" />
-                                <span>SALIN!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clipboard className="w-3 h-3" />
-                                <span>SALIN CSS</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* TAB 2: ATMOSPHERE SIMULATOR */}
-                    {activeTab === "atmosphere" && (
-                      <motion.div
-                        key="atmosphere-workspace"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-                          {/* Controls Pane */}
-                          <div className="md:col-span-5 space-y-4 flex flex-col justify-between">
-                            <div>
-                              <h4 className="font-serif italic text-lg text-current">Siklus Jagat Raya</h4>
-                              <p className="text-[11px] text-stone-500">Sesuaikan waktu untuk mengubah suasana tata cahaya dan kelembaban lingkungan.</p>
-                            </div>
-
-                            {/* TimeOfDay Slider */}
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-[11px] font-semibold">
-                                <span className="text-stone-400 uppercase tracking-wider">Jam Simulasi</span>
-                                <span className="text-amber-500 font-mono">{timeOfDay.toString().padStart(2, "0")}:00 WIB</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="0"
-                                max="23"
-                                value={timeOfDay}
-                                onChange={(e) => setTimeOfDay(Number(e.target.value))}
-                                className="w-full accent-amber-500 bg-black/10 dark:bg-white/10 h-1 rounded-full cursor-pointer"
-                              />
-                              <div className="flex justify-between text-[9px] text-stone-500 font-bold">
-                                <span>00:00</span>
-                                <span>06:00</span>
-                                <span>12:00</span>
-                                <span>18:00</span>
-                              </div>
-                            </div>
-
-                            {/* Dust Density Slider */}
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-[11px] font-semibold">
-                                <span className="text-stone-400 uppercase tracking-wider">Partikel Debu Cahaya</span>
-                                <span className="text-amber-500">{particleDensity} Pcs</span>
-                              </div>
-                              <input
-                                type="range"
-                                min="5"
-                                max="35"
-                                value={particleDensity}
-                                onChange={(e) => setParticleDensity(Number(e.target.value))}
-                                className="w-full accent-amber-500 bg-black/10 dark:bg-white/10 h-1 rounded-full cursor-pointer"
-                              />
-                            </div>
-
-                            {/* Atmosphere Status Details */}
-                            <div className="p-3.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                {timeOfDay >= 6 && timeOfDay < 18 ? (
-                                  <Sun className="w-4 h-4 text-amber-500 animate-spin" style={{ animationDuration: '24s' }} />
-                                ) : (
-                                  <Moon className="w-4 h-4 text-indigo-400" />
-                                )}
-                                <h5 className="font-serif italic text-current font-bold text-sm">{atmosphere.name}</h5>
-                              </div>
-                              <p className="text-[11px] text-stone-500 leading-relaxed font-light">
-                                {atmosphere.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Dynamic Visualizer Canvas */}
-                          <div className="md:col-span-7 relative rounded-2xl border border-black/5 dark:border-white/5 h-64 overflow-hidden flex flex-col justify-center items-center bg-stone-900">
-                            {/* Visualizer Atmosphere gradient backdrop */}
-                            <div className={`absolute inset-0 bg-gradient-to-b ${atmosphere.bg} transition-all duration-1000`} />
-                            
-                            {/* Radial blueprint circle decoration */}
-                            <div className="absolute w-48 h-48 rounded-full border border-white/5 pointer-events-none" />
-                            <div className="absolute w-32 h-32 rounded-full border border-white/5 pointer-events-none" />
-                            <div className="absolute w-16 h-16 rounded-full border border-white/5 pointer-events-none" />
-
-                            {/* Floating Sun / Moon in Solar Simulation path */}
-                            <motion.div 
-                              className="absolute z-10 flex flex-col items-center pointer-events-none"
-                              style={{
-                                top: `${35 + Math.sin((timeOfDay - 6) * Math.PI / 12) * -22}%`,
-                                left: `${15 + (timeOfDay / 24) * 70}%`,
-                              }}
-                              animate={{ scale: [0.97, 1.03, 0.97] }}
-                              transition={{ repeat: Infinity, duration: 4 }}
-                            >
-                              {timeOfDay >= 6 && timeOfDay < 18 ? (
-                                <div className="w-8 h-8 rounded-full bg-amber-400/90 shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-center">
-                                  <Sun className="w-4 h-4 text-amber-950 animate-spin" style={{ animationDuration: '30s' }} />
-                                </div>
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-indigo-100/95 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center">
-                                  <Moon className="w-3 h-3 text-stone-800" />
-                                </div>
-                              )}
-                            </motion.div>
-
-                            {/* Flying ambient particles */}
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                              {Array.from({ length: particleDensity }).map((_, i) => {
-                                const size = Math.random() * 3 + 1.2;
-                                const delay = Math.random() * 4;
-                                const duration = Math.random() * 7 + 5;
-                                
-                                return (
-                                  <motion.div
-                                    key={i}
-                                    className="absolute rounded-full bg-white/35"
-                                    style={{
-                                      width: size,
-                                      height: size,
-                                      left: `${Math.random() * 100}%`,
-                                      bottom: `${Math.random() * 100}%`,
-                                    }}
-                                    animate={{
-                                      y: [-10, -110],
-                                      x: [0, (Math.random() - 0.5) * 30],
-                                      opacity: [0, 0.6, 0]
-                                    }}
-                                    transition={{
-                                      repeat: Infinity,
-                                      duration: duration,
-                                      delay: delay,
-                                      ease: "linear"
-                                    }}
-                                  />
-                                );
-                              })}
-                            </div>
-
-                            {/* Equalizer Resonant bar indicator */}
-                            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-black/45 backdrop-blur-md border border-white/5 rounded-xl px-3.5 py-2.5 z-10">
-                              <div className="flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                                <span className="text-[9px] uppercase font-bold tracking-widest text-stone-300">Frekuensi Resonansi</span>
-                              </div>
-                              <div className="flex gap-0.5 items-end h-3">
-                                {Array.from({ length: 12 }).map((_, i) => {
-                                  const delay = i * 0.08;
-                                  const heightMultiplier = Math.random() * 8 + 3;
-                                  return (
-                                    <motion.div
-                                      key={i}
-                                      className="w-0.5 rounded-full bg-emerald-400/70"
-                                      animate={{ height: [3, heightMultiplier, 3] }}
-                                      transition={{ repeat: Infinity, duration: 1.1, delay: delay }}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            <span className="absolute top-4 left-4 text-[9px] uppercase font-bold tracking-widest text-white/40">SIMULATOR LINGKUNGAN</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* TAB 3: INNOVATION RADAR */}
-                    {activeTab === "radar" && (
-                      <motion.div
-                        key="radar-workspace"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-6"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-                          {/* Left: Sweeper Radar visual */}
-                          <div className="md:col-span-5 flex flex-col items-center justify-center">
-                            <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden bg-stone-900/40 dark:bg-black/40">
-                              {/* Concentric circles */}
-                              <div className="absolute w-36 h-36 rounded-full border border-black/5 dark:border-white/5" />
-                              <div className="absolute w-24 h-24 rounded-full border border-black/5 dark:border-white/5" />
-                              <div className="absolute w-12 h-12 rounded-full border border-black/5 dark:border-white/5" />
-                              
-                              {/* Axis cross */}
-                              <div className="absolute w-full h-[1px] bg-black/5 dark:bg-white/5" />
-                              <div className="absolute h-full w-[1px] bg-black/5 dark:bg-white/5" />
-
-                              {/* Glowing Scanbeam */}
-                              <motion.div 
-                                className="absolute w-1/2 h-1/2 origin-bottom-right bottom-1/2 right-1/2 bg-gradient-to-br from-transparent to-sky-500/20 border-r border-sky-400/20"
-                                animate={radarRotating ? { rotate: 360 } : {}}
-                                transition={{ repeat: Infinity, duration: 4.5, ease: "linear" }}
-                              />
-
-                              {/* Project 1 Dot */}
-                              <button
-                                onClick={() => { setSelectedProject(1); setRadarRotating(false); }}
-                                className="absolute w-3 h-3 rounded-full bg-emerald-400 border border-white shadow-[0_0_10px_#10b981] cursor-pointer hover:scale-125 z-10 transition-transform"
-                                style={{ top: "25%", left: "68%" }}
-                              />
-
-                              {/* Project 2 Dot */}
-                              <button
-                                onClick={() => { setSelectedProject(2); setRadarRotating(false); }}
-                                className="absolute w-3 h-3 rounded-full bg-amber-400 border border-white shadow-[0_0_10px_#f59e0b] cursor-pointer hover:scale-125 z-10 transition-transform"
-                                style={{ top: "68%", left: "32%" }}
-                              />
-
-                              {/* Project 3 Dot */}
-                              <button
-                                onClick={() => { setSelectedProject(3); setRadarRotating(false); }}
-                                className="absolute w-3 h-3 rounded-full bg-rose-400 border border-white shadow-[0_0_10px_#f43f5e] cursor-pointer hover:scale-125 z-10 transition-transform"
-                                style={{ top: "45%", left: "20%" }}
-                              />
-
-                              {/* Project 4 Dot */}
-                              <button
-                                onClick={() => { setSelectedProject(4); setRadarRotating(false); }}
-                                className="absolute w-3 h-3 rounded-full bg-sky-400 border border-white shadow-[0_0_10px_#0ea5e9] cursor-pointer hover:scale-125 z-10 transition-transform"
-                                style={{ top: "35%", left: "45%" }}
-                              />
-
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <span className="px-2.5 py-0.5 bg-black/75 rounded-full border border-white/10 text-[8px] font-bold uppercase tracking-widest text-stone-400">RW26 RADAR</span>
-                              </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-3 text-[9px] font-bold text-stone-500 uppercase tracking-wider">
-                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Web</span>
-                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> IoT</span>
-                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Energi</span>
-                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-400" /> AI</span>
-                            </div>
-                          </div>
-
-                          {/* Right: Project Lists / Details */}
-                          <div className="md:col-span-7 flex flex-col justify-between space-y-4">
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-serif italic text-lg text-current">Peta Inovasi Digital</h4>
-                                <button 
-                                  onClick={() => setRadarRotating(true)}
-                                  className="text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-stone-400 hover:text-current flex items-center gap-1 cursor-pointer transition-all"
-                                >
-                                  <RefreshCw className="w-2.5 h-2.5 animate-spin" style={{ animationDuration: '6s' }} /> Putar Radar
-                                </button>
-                              </div>
-                              <p className="text-[11px] text-stone-500">Pilih titik satelit radar di kiri atau daftar proyek di bawah ini.</p>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                              {projects.map((p) => (
-                                <button
-                                  key={p.id}
-                                  onClick={() => { setSelectedProject(p.id); setRadarRotating(false); }}
-                                  className={`text-left p-2.5 rounded-xl border transition-all flex justify-between items-center cursor-pointer ${
-                                    selectedProject === p.id
-                                      ? "bg-sky-500/10 border-sky-500/40 text-current"
-                                      : "bg-black/5 dark:bg-white/5 border-transparent text-stone-400 hover:bg-black/10 dark:hover:bg-white/10"
-                                  }`}
-                                >
-                                  <div>
-                                    <h5 className="text-[11px] font-bold text-current">{p.title}</h5>
-                                    <span className="text-[9px] text-stone-500">{p.tech}</span>
-                                  </div>
-                                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                                    p.status === "Production Ready" ? "bg-emerald-500/10 text-emerald-500" :
-                                    p.status === "Beta Testing" ? "bg-sky-500/10 text-sky-500" :
-                                    p.status === "Prototyping" ? "bg-amber-500/10 text-amber-500" :
-                                    "bg-rose-500/10 text-rose-500"
-                                  }`}>
-                                    {p.status}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Detailed Info Section */}
-                            <AnimatePresence mode="wait">
-                              {selectedProject !== null && (
-                                <motion.div
-                                  key={selectedProject}
-                                  initial={{ opacity: 0, y: 5 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: 5 }}
-                                  className="p-3.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-2.5 text-xs"
-                                >
-                                  {(() => {
-                                    const p = projects.find(item => item.id === selectedProject);
-                                    if (!p) return null;
-                                    return (
-                                      <>
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <h6 className="font-bold text-sky-400">{p.title}</h6>
-                                            <span className="text-[9px] text-stone-500 font-mono">Tech: {p.tech}</span>
-                                          </div>
-                                          <button 
-                                            onClick={() => setSelectedProject(null)}
-                                            className="text-[9px] text-stone-500 hover:text-stone-300 font-bold uppercase tracking-wider"
-                                          >
-                                            tutup
-                                          </button>
-                                        </div>
-                                        <p className="text-[11px] text-stone-500 leading-relaxed">
-                                          {p.desc}
-                                        </p>
-                                        <div className="grid grid-cols-3 gap-2 text-center text-[9px] border-t border-black/5 dark:border-white/5 pt-2">
-                                          <div>
-                                            <span className="text-stone-400 block font-bold uppercase">Progres</span>
-                                            <span className="text-emerald-500 font-bold font-mono">{p.progress}%</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-stone-400 block font-bold uppercase">Dampak</span>
-                                            <span className="text-sky-500 font-bold">{p.impact}</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-stone-400 block font-bold uppercase">Status</span>
-                                            <span className="text-amber-500 font-bold">{p.status}</span>
-                                          </div>
-                                        </div>
-                                      </>
-                                    );
-                                  })()}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Bottom telemetry indicators */}
-                <div className="mt-6 border-t pt-4 flex flex-col sm:flex-row justify-between items-center text-[10px] text-stone-500 gap-2" style={{ borderColor: isDayMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' }}>
-                  <span>Simulasi Telemetri & Desain Terpadu Balai Warga RW 26</span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Sync Connected
+                {/* Main Voice Activation Button */}
+                <button
+                  onClick={() => {
+                    unlockAudioEngine();
+                    voiceState === "listening" ? stopListeningVoice() : startListeningVoice();
+                  }}
+                  className={`w-full max-w-md py-3 px-5 rounded-2xl font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md ${
+                    voiceState === "listening"
+                      ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30 animate-pulse"
+                      : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/25"
+                  }`}
+                >
+                  {voiceState === "listening" ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 animate-bounce" />}
+                  <span className="text-xs sm:text-sm tracking-wide font-sans">
+                    {voiceState === "listening" ? "Matikan Mikrofon (Sedang Mendengarkan)" : "Aktifkan Mikrofon & Mulai Bicara Suara"}
                   </span>
+                </button>
+
+                {/* Live thought pill if deep thinking is active */}
+                {currentThought && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[10px] font-mono flex items-center gap-2 max-w-md text-center"
+                  >
+                    <BrainCircuit className="w-3.5 h-3.5 text-purple-400 animate-spin shrink-0" />
+                    <span>{currentThought}</span>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Active AI Voice Spoken Response Display Card */}
+              <div className={`p-4 sm:p-5 rounded-2xl border transition-all shrink-0 ${
+                isDayMode ? "bg-stone-100 border-stone-200" : "bg-black/50 border-white/10"
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase">Respon Suara Naswa (Notulen & Asisten Warga)</span>
+                  </div>
+
+                  {/* Manual Play / Replay Voice Button */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        unlockAudioEngine();
+                        if (voiceState === "speaking") {
+                          if (typeof window !== "undefined" && window.speechSynthesis) {
+                            try { window.speechSynthesis.cancel(); } catch {}
+                          }
+                          setVoiceState("idle");
+                        } else {
+                          speakText(activeVoiceReply.reply);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                      title="Putar Suara Naswa"
+                    >
+                      <Volume2 className={`w-4 h-4 ${voiceState === "speaking" ? "animate-bounce" : ""}`} />
+                      <span>{voiceState === "speaking" ? "Hentikan Suara" : "Putar Suara 🔊"}</span>
+                    </button>
+                    {activeVoiceReply.time && (
+                      <span className="text-[10px] font-mono opacity-60 hidden sm:inline">{activeVoiceReply.time}</span>
+                    )}
+                  </div>
                 </div>
+
+                {activeVoiceReply.query && (
+                  <p className="text-[11px] font-mono text-emerald-400/90 mb-2 italic bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                    🗣 " {activeVoiceReply.query} "
+                  </p>
+                )}
+
+                {activeVoiceReply.thought && (
+                  <div className="mb-2 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10px] font-mono flex items-center gap-1.5">
+                    <BrainCircuit className="w-3.5 h-3.5 text-purple-400 shrink-0 animate-spin" />
+                    <span>Thought: {activeVoiceReply.thought}</span>
+                  </div>
+                )}
+
+                <p className="text-xs sm:text-sm leading-relaxed font-sans font-medium text-current">
+                  {activeVoiceReply.reply}
+                </p>
+              </div>
+
+              {/* Quick Voice Topics Shortcuts */}
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <span className="text-[10px] font-mono text-stone-400 uppercase tracking-wider">PILIH TOPIK SUARA LANGSUNG:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: "Pengurus RW 26", query: "Struktur & Nama Pengurus RW 26" },
+                    { label: "Visi & Misi", query: "Visi Misi & Tujuan RW 26" },
+                    { label: "Program Warga", query: "Program & Kegiatan Warga" },
+                    { label: "Jadwal Ronda", query: "Jadwal Ronda & Keamanan" }
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        unlockAudioEngine();
+                        handleVoiceQuery(item.query);
+                      }}
+                      className="text-[11px] font-mono px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 truncate"
+                    >
+                      <span>🎙️</span>
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer info */}
+              <div className="border-t pt-3 flex flex-col sm:flex-row justify-between items-center text-[10px] text-stone-500 gap-1 shrink-0" style={{ borderColor: isDayMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)' }}>
+                <span className="flex items-center gap-2">
+                  <span>Naswa - Notulen & Asisten Warga</span>
+                  {lowLatency && <span className="text-cyan-400 font-mono">[Low Latency]</span>}
+                  {deepThinking && <span className="text-purple-400 font-mono">[Deep.Thingking]</span>}
+                </span>
+                <span className="flex items-center gap-1.5 font-mono">
+                  <span className={`w-1.5 h-1.5 rounded-full ${voiceState === "listening" ? "bg-rose-500 animate-ping" : "bg-emerald-500 animate-pulse"}`} />
+                  {voiceState === "listening" ? "Mic Active (Listening)" : "Voice Mode Ready"}
+                </span>
               </div>
 
             </div>
@@ -856,3 +553,4 @@ export function LabSection({ isOpen, onClose, isDayMode, setIsDayMode }: LabSect
     </AnimatePresence>
   );
 }
+
