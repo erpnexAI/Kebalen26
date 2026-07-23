@@ -114,15 +114,44 @@ export function ProgramKegiatanSection({ isDayMode }: ProgramKegiatanSectionProp
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
             <div className="lg:col-span-8 space-y-4">
-              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-flared font-bold italic leading-none tracking-tight ${
-                isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
-              }`}>
-                Program Unggulan <br />
-                <span className="text-emerald-400 not-italic font-sans font-bold tracking-tight">Kemandirian & Inovasi</span>
-              </h2>
-              <div className={`h-[1px] w-32 bg-gradient-to-r ${
-                isDayMode ? "from-emerald-500/50 to-transparent" : "from-emerald-400/50 to-transparent"
-              }`} />
+              <motion.h2 
+                initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className={`text-4xl sm:text-5xl md:text-6xl font-flared font-bold italic leading-none tracking-tight ${
+                  isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
+                }`}
+              >
+                <motion.span
+                  initial={{ opacity: 0, x: -16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+                  className="inline-block"
+                >
+                  Program Unggulan
+                </motion.span>{" "}
+                <br />
+                <motion.span
+                  initial={{ opacity: 0, x: 16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                  className="text-emerald-400 not-italic font-sans font-bold tracking-tight inline-block"
+                >
+                  Kemandirian & Inovasi
+                </motion.span>
+              </motion.h2>
+              <motion.div 
+                initial={{ scaleX: 0, originX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
+                className={`h-[1px] w-32 bg-gradient-to-r ${
+                  isDayMode ? "from-emerald-500/50 to-transparent" : "from-emerald-400/50 to-transparent"
+                }`} 
+              />
             </div>
 
             <div className="lg:col-span-4 lg:pl-4">

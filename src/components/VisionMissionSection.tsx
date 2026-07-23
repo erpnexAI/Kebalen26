@@ -209,12 +209,35 @@ export function VisionMissionSection({ isDayMode }: VisionMissionSectionProps) {
                 <span>About</span>
               </div>
               
-              <h2 className={`font-flared font-bold italic text-4xl sm:text-5xl lg:text-6xl leading-[1.15] tracking-tight transition-colors duration-500 ${
-                isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
-              }`}>
-                Sinergi Tradisi, <br />
-                <span className="text-emerald-400 not-italic font-sans font-bold tracking-tight">BE.R.JU.AN.G</span>
-              </h2>
+              <motion.h2 
+                initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
+                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className={`font-flared font-bold italic text-4xl sm:text-5xl lg:text-6xl leading-[1.15] tracking-tight transition-colors duration-500 ${
+                  isDayMode ? "text-emerald-600" : "text-[#E1E0CC]"
+                }`}
+              >
+                <motion.span
+                  initial={{ opacity: 0, x: -16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+                  className="inline-block"
+                >
+                  Sinergi Tradisi,
+                </motion.span>{" "}
+                <br />
+                <motion.span
+                  initial={{ opacity: 0, x: 16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                  className="text-emerald-400 not-italic font-sans font-bold tracking-tight inline-block"
+                >
+                  BE.R.JU.AN.G
+                </motion.span>
+              </motion.h2>
               
               <p className={`text-base sm:text-lg font-light leading-relaxed max-w-2xl transition-colors duration-500 ${
                 isDayMode ? "text-stone-600" : "text-stone-400"

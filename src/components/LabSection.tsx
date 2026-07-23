@@ -82,7 +82,7 @@ export function LabSection({ isOpen, onClose, isDayMode }: LabSectionProps) {
     } catch {}
 
     const cleanText = text
-      .replace(/\(.*?\)/g, ', ')
+      .replace(/\(.*?\)/g, '')
       .replace(/[*#_`~]/g, '')
       .replace(/[-•]/g, ' ')
       .replace(/\s+/g, ' ')
@@ -92,8 +92,8 @@ export function LabSection({ isOpen, onClose, isDayMode }: LabSectionProps) {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "id-ID";
-    utterance.rate = 1.08; // Energetic, fast, natural 25yo female Naswa speed
-    utterance.pitch = 1.18; // Cheerful 25yo female Naswa persona tone
+    utterance.rate = 1.0; // Natural human KORE cadence (no robotic stretch)
+    utterance.pitch = 1.0; // Natural human KORE pitch
 
     // Pre-cache & assign best Indonesian female voice
     const voices = synth.getVoices();

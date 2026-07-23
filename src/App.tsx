@@ -21,6 +21,24 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
   const [isNavHidden, setIsNavHidden] = useState(false);
+  
+  const [dayVideoSrc, setDayVideoSrc] = useState<string>(() => localStorage.getItem("rw26_day_video") || "https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+  const [nightVideoSrc, setNightVideoSrc] = useState<string>(() => localStorage.getItem("rw26_night_video") || "https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+
+  useEffect(() => {
+    const checkVideos = () => {
+      const d = localStorage.getItem("rw26_day_video");
+      const n = localStorage.getItem("rw26_night_video");
+      if (d) setDayVideoSrc(d);
+      if (n) setNightVideoSrc(n);
+    };
+    window.addEventListener("storage", checkVideos);
+    const interval = setInterval(checkVideos, 1000);
+    return () => {
+      window.removeEventListener("storage", checkVideos);
+      clearInterval(interval);
+    };
+  }, []);
   const navItems = ["About", "Programs", "Our Team", "News"];
 
   useEffect(() => {
@@ -87,27 +105,49 @@ export default function App() {
 
           {isDayMode ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-              <iframe
-                src="https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
-                className="video-background-iframe opacity-85 transition-opacity duration-1000"
-                frameBorder="0"
-                allow="autoplay; encrypted-media"
-                loading="lazy"
-                title="Day Mode Background Video"
-                onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
-              />
+              {dayVideoSrc.includes(".mp4") || dayVideoSrc.startsWith("/") || (dayVideoSrc.startsWith("http") && !dayVideoSrc.includes("youtube.com")) ? (
+                <video
+                  src={dayVideoSrc}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="video-background-iframe opacity-85 transition-opacity duration-1000 object-cover"
+                />
+              ) : (
+                <iframe
+                  src={dayVideoSrc}
+                  className="video-background-iframe opacity-85 transition-opacity duration-1000"
+                  frameBorder="0"
+                  allow="autoplay; encrypted-media"
+                  loading="lazy"
+                  title="Day Mode Background Video"
+                  onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
+                />
+              )}
             </div>
           ) : (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-              <iframe
-                src="https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1"
-                className="video-background-iframe opacity-85 transition-opacity duration-1000"
-                frameBorder="0"
-                allow="autoplay; encrypted-media"
-                loading="lazy"
-                title="Dark Mode Background Video"
-                onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
-              />
+              {nightVideoSrc.includes(".mp4") || nightVideoSrc.startsWith("/") || (nightVideoSrc.startsWith("http") && !nightVideoSrc.includes("youtube.com")) ? (
+                <video
+                  src={nightVideoSrc}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="video-background-iframe opacity-85 transition-opacity duration-1000 object-cover"
+                />
+              ) : (
+                <iframe
+                  src={nightVideoSrc}
+                  className="video-background-iframe opacity-85 transition-opacity duration-1000"
+                  frameBorder="0"
+                  allow="autoplay; encrypted-media"
+                  loading="lazy"
+                  title="Dark Mode Background Video"
+                  onLoad={(e) => handleIframeMute(e.target as HTMLIFrameElement)}
+                />
+              )}
             </div>
           )}
         </div>

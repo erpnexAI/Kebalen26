@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ShieldCheck, Key, Users, Newspaper, Mic, Settings, BookOpen, CheckCircle, Database, Lock, Save, Plus, Trash2 } from "lucide-react";
+import { X, ShieldCheck, Key, Users, Newspaper, Mic, Settings, BookOpen, CheckCircle, Database, Lock, Save, Plus, Trash2, Video } from "lucide-react";
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -9,10 +9,21 @@ interface AdminPanelModalProps {
 }
 
 export function AdminPanelModal({ isOpen, onClose, isDayMode }: AdminPanelModalProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "ai_knowledge" | "team" | "news" | "guide">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "videos" | "ai_knowledge" | "team" | "news" | "guide">("overview");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [loginError, setLoginError] = useState("");
+
+  // Video Background CMS State
+  const [dayVideoInput, setDayVideoInput] = useState(() => localStorage.getItem("rw26_day_video") || "https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+  const [nightVideoInput, setNightVideoInput] = useState(() => localStorage.getItem("rw26_night_video") || "https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+
+  const saveVideos = () => {
+    localStorage.setItem("rw26_day_video", dayVideoInput);
+    localStorage.setItem("rw26_night_video", nightVideoInput);
+    window.dispatchEvent(new Event("storage"));
+    handleSave("Video latar berhasil disimpan! Tanpa kontrol dan loop mulus.");
+  };
 
   // Sample CMS Managed State
   const [aiCustomGreeting, setAiCustomGreeting] = useState("Halo Bapak dan Ibu Warga RW 26 Kebalen! Ceria sekali bisa menyapa Anda hari ini!");
@@ -205,10 +216,67 @@ export function AdminPanelModal({ isOpen, onClose, isDayMode }: AdminPanelModalP
                   <BookOpen className="w-4 h-4" />
                   Panduan Handover
                 </button>
+                <button
+                  onClick={() => setActiveTab("videos")}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all text-left whitespace-nowrap ${
+                    activeTab === "videos" 
+                      ? "bg-emerald-500 text-black font-bold shadow-md shadow-emerald-500/20" 
+                      : "hover:bg-white/5 text-stone-300"
+                  }`}
+                >
+                  <Video className="w-4 h-4" />
+                  Video Latar MP4
+                </button>
               </div>
 
               {/* Main Content Body */}
               <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                {activeTab === "videos" && (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-lg font-serif font-bold italic mb-1">Pengaturan Video Latar (Background MP4)</h4>
+                      <p className="text-xs text-stone-400">
+                        Gunakan video format .mp4 lokal atau link langsung untuk menghilangkan kontrol, tombol play, dan loading berkedip saat video berulang (loop).
+                      </p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border border-stone-800 bg-stone-900/30 space-y-4">
+                      <h5 className="text-sm font-bold flex items-center gap-2 text-emerald-400">
+                        <Video className="w-4 h-4" /> Sumber Video Background Mode Siang & Malam
+                      </h5>
+                      <div>
+                        <label className="text-xs text-stone-300 block mb-1 font-medium">Link / Path Video MP4 Mode Siang (Day Mode):</label>
+                        <input
+                          type="text"
+                          value={dayVideoInput}
+                          onChange={(e) => setDayVideoInput(e.target.value)}
+                          placeholder="contoh: /day.mp4 atau https://domain.com/video.mp4"
+                          className="w-full px-3 py-2 rounded-xl border border-stone-700 bg-black/40 text-xs text-stone-200 focus:border-emerald-500 outline-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-stone-300 block mb-1 font-medium">Link / Path Video MP4 Mode Malam (Dark Mode):</label>
+                        <input
+                          type="text"
+                          value={nightVideoInput}
+                          onChange={(e) => setNightVideoInput(e.target.value)}
+                          placeholder="contoh: /night.mp4 atau https://domain.com/video.mp4"
+                          className="w-full px-3 py-2 rounded-xl border border-stone-700 bg-black/40 text-xs text-stone-200 focus:border-emerald-500 outline-none font-mono"
+                        />
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-300 leading-relaxed">
+                        💡 <span className="font-bold">Tips:</span> Masukkan URL langsung berformat `.mp4` (atau file lokal di folder publik). Sistem otomatis memutar dengan tag HTML5 {"<video>"} tanpa ada kontrol YouTube yang mengganggu!
+                      </div>
+                      <button
+                        onClick={saveVideos}
+                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+                      >
+                        <Save className="w-4 h-4" /> Simpan & Terapkan Video Latar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === "overview" && (
                   <div className="space-y-6">
                     <div>
