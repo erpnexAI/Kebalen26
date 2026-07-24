@@ -82,7 +82,7 @@ export function ProgramKegiatanSection({ isDayMode }: ProgramKegiatanSectionProp
   return (
     <section 
       id="programs" 
-      className={`relative w-full py-24 sm:py-32 px-4 sm:px-8 md:px-16 overflow-hidden transition-colors duration-500 ${
+      className={`relative w-full py-24 sm:py-32 px-4 sm:px-8 md:px-16 overflow-hidden transition-colors duration-500 scroll-mt-20 sm:scroll-mt-24 ${
         isDayMode ? "bg-[#fcfbf9]" : "bg-[#050505]"
       }`}
     >

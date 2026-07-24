@@ -4,7 +4,7 @@
  */
 
 import { ArrowRight, Menu, X, Sun, Moon, Mic, ShieldCheck } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlassToggle } from "./components/GlassToggle";
 import { LabSection } from "./components/LabSection";
@@ -12,18 +12,31 @@ import { VisionMissionSection } from "./components/VisionMissionSection";
 import { ProgramKegiatanSection } from "./components/ProgramKegiatanSection";
 import { OurTeamSection } from "./components/OurTeamSection";
 import { NewsSection } from "./components/NewsSection";
+import { KataWargaSection } from "./components/KataWargaSection";
+import { ContactSection } from "./components/ContactSection";
 import { AdminPanelModal } from "./components/AdminPanelModal";
 
 export default function App() {
+  const heroRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDayMode, setIsDayMode] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
-  const [isNavHidden, setIsNavHidden] = useState(false);
+  const [isHeroVisible, setIsHeroVisible] = useState(true);
+
+  const handleToggleMode = () => {
+    setIsPulling(true);
+    setIsDayMode(!isDayMode);
+    setTimeout(() => {
+      setIsPulling(false);
+    }, 450);
+  };
   
-  const [dayVideoSrc, setDayVideoSrc] = useState<string>(() => localStorage.getItem("rw26_day_video") || "https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
-  const [nightVideoSrc, setNightVideoSrc] = useState<string>(() => localStorage.getItem("rw26_night_video") || "https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+  const [dayVideoSrc, setDayVideoSrc] = useState<string>(() => localStorage.getItem("rw26_day_video") || "/bg-siang-kebalen.mp4");
+  const [nightVideoSrc, setNightVideoSrc] = useState<string>(() => localStorage.getItem("rw26_night_video") || "/bg-malam-kebalen.mp4");
 
   useEffect(() => {
     const checkVideos = () => {
@@ -39,19 +52,54 @@ export default function App() {
       clearInterval(interval);
     };
   }, []);
-  const navItems = ["About", "Programs", "Our Team", "News"];
+  const navItems = [
+    { label: "About", id: "about" },
+    { label: "Programs", id: "programs" },
+    { label: "Our Team", id: "team" },
+    { label: "News", id: "news" },
+    { label: "Kata Warga", id: "kata-warga" },
+    { label: "Contact", id: "contact" }
+  ];
+
+  const scrollToSection = (targetId: string) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      triggerNotification(targetId);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
-      // Hide nav when scrolling past page 1 (hero section) into page 2 and beyond
-      if (window.scrollY > window.innerHeight * 0.5) {
-        setIsNavHidden(true);
+      // Toggle dark/light floating button visibility (only visible when in Hero section)
+      if (window.scrollY > window.innerHeight * 0.45) {
+        setIsHeroVisible(false);
       } else {
-        setIsNavHidden(false);
+        setIsHeroVisible(true);
       }
+
+      // Track active section for nav link highlights
+      const scrollPos = window.scrollY + 200;
+      let current = "";
+
+      for (const item of navItems) {
+        const el = document.getElementById(item.id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            current = item.id;
+            break;
+          }
+        }
+      }
+
+      setActiveSection(current);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -97,14 +145,14 @@ export default function App() {
     <div className={`relative w-full min-h-screen transition-colors duration-500 ${isDayMode ? "bg-[#faf9f6]" : "bg-black"}`}>
       <div className="relative w-full">
         {/* Hero Viewport Wrapper */}
-        <div className="relative w-full h-screen overflow-hidden">
+        <div ref={heroRef} className="relative w-full h-screen overflow-hidden">
           {/* Background */}
           <div className="hero bg-gradient-to-b from-black via-[#0d130e] to-black">
             {/* Fallback ambient poster background for instant 0ms visual render */}
             <div className={`absolute inset-0 transition-opacity duration-1000 ${isDayMode ? "bg-gradient-to-br from-emerald-100/40 via-stone-200 to-white opacity-90" : "bg-gradient-to-br from-stone-950 via-emerald-950/20 to-black opacity-90"}`} />
 
           {isDayMode ? (
-            <div className="absolute inset-0 w-full h-full overflow-hidden">
+            <div className={`absolute inset-0 w-full h-full overflow-hidden bg-front ${isPulling ? "pull-down" : ""}`}>
               {dayVideoSrc.includes(".mp4") || dayVideoSrc.startsWith("/") || (dayVideoSrc.startsWith("http") && !dayVideoSrc.includes("youtube.com")) ? (
                 <video
                   src={dayVideoSrc}
@@ -127,7 +175,7 @@ export default function App() {
               )}
             </div>
           ) : (
-            <div className="absolute inset-0 w-full h-full overflow-hidden">
+            <div className={`absolute inset-0 w-full h-full overflow-hidden bg-front ${isPulling ? "pull-down" : ""}`}>
               {nightVideoSrc.includes(".mp4") || nightVideoSrc.startsWith("/") || (nightVideoSrc.startsWith("http") && !nightVideoSrc.includes("youtube.com")) ? (
                 <video
                   src={nightVideoSrc}
@@ -152,79 +200,134 @@ export default function App() {
           )}
         </div>
 
-        {/* Navbar Wrapper with Rotating Light Frame & Authentic Glassmorphism (80% Scale with Smooth Fade Out on Scroll) */}
-        <div className={`fixed top-3 left-1/2 -translate-x-1/2 scale-[0.80] origin-top z-50 p-[1.5px] rounded-[40px] overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-all duration-700 ease-in-out ${
-          isNavHidden 
-            ? "opacity-0 pointer-events-none -translate-y-6" 
-            : "opacity-100 pointer-events-auto translate-y-0"
-        }`}>
-          {/* Rotating Soft White Light Beam */}
-          <div className="absolute top-1/2 left-1/2 w-[350%] h-[600%] -translate-x-1/2 -translate-y-1/2 animate-silver-spin bg-[conic-gradient(from_0deg,transparent_0deg_200deg,rgba(255,255,255,0.05)_230deg,rgba(255,255,255,0.95)_290deg,rgba(255,255,255,0.3)_330deg,transparent_360deg)] pointer-events-none opacity-100" />
-          
+        {/* Navbar Wrapper with Authentic Glassmorphism */}
+        <div className="fixed top-2.5 left-1/2 -translate-x-1/2 w-[88vw] max-w-[720px] z-50 p-[1.5px] rounded-[32px] shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-in-out opacity-100 pointer-events-auto translate-y-0">
           {/* Glass Edge Specular Reflection Border */}
-          <div className="absolute inset-0 rounded-[40px] border border-white/40 pointer-events-none z-20" />
+          <div className="absolute inset-0 rounded-[32px] border border-white/40 pointer-events-none z-20" />
 
-          {/* Inner Nav Container - Pure Glassmorphism Effect */}
-          <nav className={`relative z-10 flex items-center gap-4 sm:gap-8 md:gap-12 px-6 sm:px-9 h-12 sm:h-16 rounded-[40px] backdrop-blur-xl transition-all duration-300 ${
+          {/* Inner Nav Container */}
+          <nav className={`relative z-10 flex items-center justify-between gap-1.5 sm:gap-3 px-3 sm:px-5 h-10 sm:h-11 rounded-[32px] backdrop-blur-2xl transition-all duration-300 ${
             isDayMode 
-              ? "bg-white/30 border border-white/50 text-stone-900 shadow-[0_8px_32px_0_rgba(31,38,135,0.12),inset_0_1px_1px_0_rgba(255,255,255,0.9)]" 
-              : "bg-black/35 border border-white/20 text-[#E1E0CC] shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.35)]"
+              ? "bg-white/70 border border-white/60 text-stone-900 shadow-[0_8px_32px_0_rgba(31,38,135,0.15),inset_0_1px_1px_0_rgba(255,255,255,0.9)]" 
+              : "bg-black/60 border border-white/20 text-[#E1E0CC] shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_1px_1px_0_rgba(255,255,255,0.35)]"
           }`}>
-            {navItems.map((item) => (
+            {/* Mobile Brand Badge */}
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="flex items-center gap-1.5 pr-0.5 cursor-pointer group border-none bg-transparent"
+              title="Kembali ke Hero"
+            >
+              <span className="font-mono font-bold text-[10px] sm:text-xs tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-black transition-all">
+                RW 26
+              </span>
+            </button>
+
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar scrollbar-none py-0.5">
+              {navItems.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(item.id);
+                    }}
+                    className={`text-[10px] lg:text-[11px] font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full whitespace-nowrap ${
+                      isActive
+                        ? "bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)] font-bold scale-105"
+                        : "text-current hover:text-emerald-400 hover:scale-105 border border-transparent"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Actions (Mic, Admin & Mobile Hamburger) */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {/* AI Voice Conversation Icon Button */}
               <button
-                key={item}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (item === "Lab") {
-                    setIsLabOpen(true);
-                  } else if (item === "About") {
-                    document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
-                  } else if (item === "Programs") {
-                    document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" });
-                  } else if (item === "Our Team") {
-                    document.getElementById("team")?.scrollIntoView({ behavior: "smooth" });
-                  } else if (item === "News") {
-                    document.getElementById("news")?.scrollIntoView({ behavior: "smooth" });
-                  } else {
-                    triggerNotification(item);
-                  }
+                  setIsLabOpen(true);
                 }}
-                className="text-xs sm:text-sm font-semibold tracking-wider uppercase transition-all hover:text-emerald-400 hover:scale-105 cursor-pointer bg-transparent border-none outline-none whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
+                title="AI Voice Conversation"
+                className="relative p-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center shadow-[0_0_12px_rgba(16,185,129,0.3)] group"
               >
-                {item}
+                <Mic className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-pulse" />
+                <span className="hidden sm:block absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-emerald-300 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-emerald-500/30">
+                  AI Voice
+                </span>
               </button>
-            ))}
 
-            {/* AI Voice Conversation Icon Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setIsLabOpen(true);
-              }}
-              title="AI Voice Conversation"
-              className="relative p-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-300 cursor-pointer flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)] group"
-            >
-              <Mic className="w-4 h-4 animate-pulse" />
-              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-emerald-300 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-emerald-500/30">
-                AI Voice
-              </span>
-            </button>
+              {/* Portal Admin Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsAdminOpen(true);
+                }}
+                title="Portal Admin & Handover Klien"
+                className="relative p-1.5 rounded-full bg-stone-800/80 border border-stone-600/50 text-stone-300 hover:bg-stone-700 hover:text-emerald-400 transition-all duration-300 cursor-pointer flex items-center justify-center group"
+              >
+                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:block absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-stone-200 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-stone-700">
+                  Admin
+                </span>
+              </button>
 
-            {/* Portal Admin & Client Handover Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setIsAdminOpen(true);
-              }}
-              title="Portal Admin & Handover Klien"
-              className="relative p-2 rounded-full bg-stone-800/80 border border-stone-600/50 text-stone-300 hover:bg-stone-700 hover:text-emerald-400 transition-all duration-300 cursor-pointer flex items-center justify-center group"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/90 text-stone-200 text-[9px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-stone-700">
-                Admin
-              </span>
-            </button>
+              {/* Mobile Hamburger Toggle Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-full bg-stone-800/80 border border-white/20 text-white hover:bg-stone-700 transition-all cursor-pointer flex items-center justify-center ml-1"
+                aria-label="Toggle Mobile Menu"
+              >
+                {mobileMenuOpen ? <X className="w-4 h-4 text-emerald-400" /> : <Menu className="w-4 h-4 text-stone-200" />}
+              </button>
+            </div>
           </nav>
+
+          {/* Mobile Menu Expanded Dropdown */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className={`md:hidden overflow-hidden mt-2 rounded-3xl border backdrop-blur-2xl ${
+                  isDayMode
+                    ? "bg-stone-900/95 border-white/20 text-white shadow-2xl"
+                    : "bg-black/95 border-white/20 text-[#E1E0CC] shadow-2xl"
+                }`}
+              >
+                <div className="p-4 space-y-1 font-sans">
+                  {navItems.map((item) => {
+                    const isActive = activeSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setMobileMenuOpen(false);
+                          scrollToSection(item.id);
+                        }}
+                        className={`w-full text-left px-4 py-3.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all flex items-center justify-between border cursor-pointer touch-manipulation active:scale-[0.98] ${
+                          isActive
+                            ? "bg-emerald-500/25 text-emerald-400 border-emerald-500/40 font-bold"
+                            : "hover:bg-emerald-500/10 hover:text-emerald-400 border-transparent hover:border-emerald-500/20 opacity-90"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <ArrowRight className={`w-3.5 h-3.5 transition-transform ${isActive ? "text-emerald-400 translate-x-1" : "opacity-50"}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
 
@@ -234,11 +337,11 @@ export default function App() {
           {/* Left Column - Heading */}
           <div className="col-span-12 lg:col-span-8 flex flex-col justify-end">
             <div className="inline-flex flex-col w-fit max-w-full">
-              {/* Kebalen spread to match the width of RW26 with Glassmorphism */}
-              <div className={`flex justify-between w-full text-xs sm:text-base md:text-xl lg:text-2xl font-sans font-bold uppercase tracking-widest mb-1 sm:mb-3 px-3 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl border backdrop-blur-md transition-all duration-500 ${
+              {/* Kebalen spread to match the width of RW26 with White Glassmorphism */}
+              <div className={`flex justify-between w-full text-xs sm:text-base md:text-xl lg:text-2xl font-sans font-bold uppercase tracking-widest mb-1 sm:mb-3 px-3 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl border backdrop-blur-lg transition-all duration-500 ${
                 isDayMode 
-                  ? "bg-emerald-500/20 border-emerald-500/30 text-white/65 shadow-[0_4px_12px_rgba(16,185,129,0.15)]" 
-                  : "bg-black/30 border-white/10 text-[#E1E0CC]/80 shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                  ? "bg-white/30 border-white/50 text-emerald-600 shadow-[0_8px_32px_rgba(255,255,255,0.2)]" 
+                  : "bg-white/15 border-white/20 text-[#E1E0CC] shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               }`}>
                 <span>K</span>
                 <span>E</span>
@@ -266,7 +369,7 @@ export default function App() {
                 "Bekerjalah kamu, maka Allah dan Rasul-Nya serta orang-orang mukmin akan melihat pekerjaanmu itu & kamu akan dikembalikan kepada (Allah) Yang Mengetahui akan yang ghaib & yang nyata, lalu Diberitakan-Nya kepada kamu apa yang telah kamu kerjakan."
               </p>
             </div>
-            <GlassToggle isDayMode={isDayMode} onToggle={() => setIsDayMode(!isDayMode)} />
+            <GlassToggle isDayMode={isDayMode} onToggle={handleToggleMode} isVisible={isHeroVisible} heroRef={heroRef} />
           </div>
         </div>
 
@@ -287,6 +390,12 @@ export default function App() {
         {/* News & Blog Section */}
         <NewsSection isDayMode={isDayMode} />
 
+        {/* Testimonial & Suara Komunitas Section */}
+        <KataWargaSection isDayMode={isDayMode} />
+
+        {/* Contact Us Section */}
+        <ContactSection isDayMode={isDayMode} />
+
         {/* Custom Premium Toast/Notification */}
         <AnimatePresence>
           {activeNotification && (
@@ -304,14 +413,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Floating Quick Admin Trigger Button */}
-        <button
-          onClick={() => setIsAdminOpen(true)}
-          className="fixed bottom-4 right-4 z-40 px-3.5 py-2 rounded-full bg-stone-900/90 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-300 backdrop-blur-md shadow-xl flex items-center gap-2 text-xs font-mono font-bold group cursor-pointer"
-        >
-          <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:text-black" />
-          <span className="hidden sm:inline">Portal Admin RW26</span>
-        </button>
+
 
         {/* AI Voice Conversation Modal */}
         <LabSection 

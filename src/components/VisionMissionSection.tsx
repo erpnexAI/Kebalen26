@@ -90,7 +90,7 @@ export function VisionMissionSection({ isDayMode }: VisionMissionSectionProps) {
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative w-full min-h-screen py-24 sm:py-32 flex items-center overflow-hidden transition-colors duration-500 cursor-none ${containerBg}`}
+      className={`relative w-full min-h-screen py-24 sm:py-32 flex items-center overflow-hidden transition-colors duration-500 cursor-none scroll-mt-20 sm:scroll-mt-24 ${containerBg}`}
     >
       {/* Custom Futuristic Interactive Cursor Overlay */}
       {isHovered && (

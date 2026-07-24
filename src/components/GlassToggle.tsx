@@ -1,60 +1,78 @@
 import { motion } from "motion/react";
 import { Sun, Moon, GripHorizontal } from "lucide-react";
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 
 interface GlassToggleProps {
   isDayMode: boolean;
   onToggle: () => void;
+  isVisible?: boolean;
+  heroRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function GlassToggle({ isDayMode, onToggle }: GlassToggleProps) {
-  const constraintsRef = useRef<HTMLDivElement>(null);
+export function GlassToggle({ isDayMode, onToggle, isVisible = true, heroRef }: GlassToggleProps) {
+  const fallbackRef = useRef<HTMLDivElement>(null);
+  const constraintsRef = heroRef || fallbackRef;
 
   return (
     <>
-      {/* Invisible container covering the viewport to act as drag bounds */}
-      <div ref={constraintsRef} className="fixed inset-6 pointer-events-none z-[49]" />
+      {!heroRef && (
+        <div ref={fallbackRef} className="fixed inset-6 pointer-events-none z-[49]" />
+      )}
 
       <motion.div
         drag
         dragConstraints={constraintsRef}
-        dragElastic={0.1}
-        dragMomentum={true}
-        whileHover={{ scale: 1.05 }}
-        whileDrag={{ scale: 1.1 }}
-        className={`fixed bottom-8 right-8 z-50 pointer-events-auto opacity-[0.85] hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-1 p-1.5 pb-2.5 rounded-full backdrop-blur-md border shadow-2xl cursor-grab active:cursor-grabbing ${
+        dragElastic={0.15}
+        dragTransition={{ power: 0.15, timeConstant: 150 }}
+        whileHover={{ scale: isVisible ? 1.06 : 1 }}
+        whileTap={{ scale: isVisible ? 0.94 : 1 }}
+        whileDrag={{ scale: isVisible ? 1.08 : 1 }}
+        animate={{
+          opacity: isVisible ? 0.95 : 0,
+          y: isVisible ? 0 : 20,
+          scale: isVisible ? 1 : 0.9,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 30,
+        }}
+        className={`fixed bottom-8 right-8 z-50 flex flex-col items-center gap-1.5 p-2 rounded-2xl backdrop-blur-xl border shadow-2xl transition-colors duration-300 ${
+          isVisible ? "pointer-events-auto" : "pointer-events-none"
+        } ${
           isDayMode 
-            ? "bg-white/60 border-stone-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)]" 
-            : "bg-black/60 border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+            ? "bg-stone-900/40 border-stone-300/30 shadow-[0_8px_30px_rgba(0,0,0,0.15)] cursor-grab active:cursor-grabbing hover:opacity-100" 
+            : "bg-black/60 border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.6)] cursor-grab active:cursor-grabbing hover:opacity-100"
         }`}
       >
-        <button
+        <button 
+          type="button"
           onClick={onToggle}
-          className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer border-none outline-none ${
-            isDayMode ? "bg-white shadow-md text-amber-500" : "bg-stone-900 shadow-md text-emerald-400"
+          className={`relative w-16 h-9 rounded-full p-1 flex items-center cursor-pointer transition-colors duration-200 outline-none border-none ${
+            isDayMode ? "bg-stone-800/60 border border-stone-500/30" : "bg-stone-900/80 border border-white/20"
           }`}
           title={isDayMode ? "Ubah ke Mode Malam" : "Ubah ke Mode Siang"}
         >
           <motion.div
-            key={isDayMode ? "sun" : "moon"}
-            initial={{ scale: 0.6, rotate: -90, opacity: 0 }}
-            animate={{ scale: 1, rotate: 0, opacity: 1 }}
-            exit={{ scale: 0.6, rotate: 90, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md ${
+              isDayMode ? "bg-amber-400 text-stone-950 shadow-amber-500/30" : "bg-emerald-400 text-stone-950 shadow-emerald-500/30"
+            }`}
+            animate={{ x: isDayMode ? 0 : 28 }}
+            transition={{ type: "spring", stiffness: 600, damping: 28 }}
           >
             {isDayMode ? (
-              <Sun className="w-5.5 h-5.5 fill-amber-100" />
+              <Sun className="w-4 h-4 text-stone-950 fill-amber-300 stroke-[2.5]" />
             ) : (
-              <Moon className="w-5.5 h-5.5 fill-emerald-950/40" />
+              <Moon className="w-4 h-4 text-stone-950 fill-emerald-300 stroke-[2.5]" />
             )}
           </motion.div>
         </button>
 
         {/* Dynamic mini-handle drag indicator */}
-        <div className="flex flex-col items-center justify-center select-none pointer-events-none mt-1">
-          <GripHorizontal className={`w-3.5 h-3.5 ${isDayMode ? "text-stone-400" : "text-stone-600"}`} />
-          <span className={`text-[7px] font-mono font-bold tracking-tighter uppercase mt-0.5 scale-[0.85] ${
-            isDayMode ? "text-stone-400" : "text-stone-500"
+        <div className="flex items-center gap-1 select-none pointer-events-none opacity-60">
+          <GripHorizontal className={`w-3.5 h-3.5 ${isDayMode ? "text-stone-300" : "text-stone-400"}`} />
+          <span className={`text-[8px] font-mono font-bold tracking-wider uppercase ${
+            isDayMode ? "text-stone-300" : "text-stone-400"
           }`}>
             DRAG
           </span>
@@ -63,4 +81,5 @@ export function GlassToggle({ isDayMode, onToggle }: GlassToggleProps) {
     </>
   );
 }
+
 

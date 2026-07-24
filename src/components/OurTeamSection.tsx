@@ -232,7 +232,7 @@ export function OurTeamSection({ isDayMode }: OurTeamSectionProps) {
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative w-full py-24 sm:py-32 px-4 sm:px-8 md:px-12 lg:px-16 overflow-hidden transition-colors duration-500 md:cursor-none ${
+      className={`relative w-full py-24 sm:py-32 px-4 sm:px-8 md:px-12 lg:px-16 overflow-hidden transition-colors duration-500 md:cursor-none scroll-mt-20 sm:scroll-mt-24 ${
         isDayMode ? "bg-[#faf9f6]" : "bg-black"
       }`}
     >

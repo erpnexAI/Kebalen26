@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+:root {
+  --pull-easing: cubic-bezier(0.32, 0, 0.67, 0);
+  --return-easing: cubic-bezier(0.175, 0.885, 0.32, 1.4);
+  --active-toggle: #f5f8ea;
+}
+
 @theme {
   --color-primary: #DEDBC8;
   --color-muted-green: #2d3a2a;
@@ -30,64 +36,87 @@ html, body {
 }
 
 .hero {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  height: 100vh;
   overflow: hidden;
-  z-index: 0;
 }
 
 .hero-bg {
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: 45% center;
-  background-repeat: no-repeat;
-  z-index: 0;
+  background-position: center;
+  z-index: 1;
+}
+
+.bg-front {
+  transition: transform 0.5s var(--return-easing), opacity 0.5s ease;
+}
+
+.pull-down {
+  transform: translateY(20vh) scale(1.1) !important;
+  opacity: 0.8 !important;
+  transition: transform 0.3s var(--pull-easing), opacity 0.3s ease !important;
 }
 
 .blur-overlay {
   position: absolute;
   left: 0;
-  right: 0;
-  height: 200px;
-  backdrop-filter: blur(20px);
-  z-index: 1;
+  width: 100%;
+  height: 10vh;
+  z-index: 2;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(25px) saturate(1.5);
+  backdrop-filter: blur(25px) saturate(1.5);
 }
 
 .blur-overlay-top {
   top: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
 }
 
 .blur-overlay-bottom {
   bottom: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  -webkit-mask-image: linear-gradient(to top, black 70%, transparent 100%);
+  mask-image: linear-gradient(to top, black 70%, transparent 100%);
 }
 
 .video-background-iframe {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-49%, -50%) scale(1.05);
+  transform: translate(-50%, -50%);
+  min-width: 100%;
+  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   pointer-events: none;
 }
 
 @media (max-width: 768px) {
   .video-background-iframe {
-    transform: translate(-46%, -50%) scale(1.15);
+    transform: translate(-41.8%, -50%);
+    min-width: 140%;
+    min-height: 100%;
+    width: 140%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
 @media (min-aspect-ratio: 16/9) {
   .video-background-iframe {
     width: 100vw;
-    height: 56.25vw; /* 9/16 * 100vw */
+    height: 56.25vw;
   }
 }
 
 @media (max-aspect-ratio: 16/9) {
   .video-background-iframe {
-    width: 177.78vh; /* 16/9 * 100vh */
+    width: 177.78vh;
     height: 100vh;
   }
 }

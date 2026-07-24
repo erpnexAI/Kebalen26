@@ -15,8 +15,8 @@ export function AdminPanelModal({ isOpen, onClose, isDayMode }: AdminPanelModalP
   const [loginError, setLoginError] = useState("");
 
   // Video Background CMS State
-  const [dayVideoInput, setDayVideoInput] = useState(() => localStorage.getItem("rw26_day_video") || "https://www.youtube.com/embed/njAg60aSttw?autoplay=1&mute=1&loop=1&playlist=njAg60aSttw&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
-  const [nightVideoInput, setNightVideoInput] = useState(() => localStorage.getItem("rw26_night_video") || "https://www.youtube.com/embed/1_-DbIFyqP8?autoplay=1&mute=1&loop=1&playlist=1_-DbIFyqP8&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&fs=0&iv_load_policy=3&disablekb=1");
+  const [dayVideoInput, setDayVideoInput] = useState(() => localStorage.getItem("rw26_day_video") || "/bg-siang-kebalen.mp4");
+  const [nightVideoInput, setNightVideoInput] = useState(() => localStorage.getItem("rw26_night_video") || "/bg-malam-kebalen.mp4");
 
   const saveVideos = () => {
     localStorage.setItem("rw26_day_video", dayVideoInput);
